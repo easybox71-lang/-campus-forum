@@ -1,0 +1,2129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>校园论坛</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
+    "PingFang SC","Microsoft YaHei",sans-serif;
+    background:#f5f7fb;
+    color:#222;
+}
+
+button,input,textarea,select{
+    font:inherit;
+}
+
+button{
+    cursor:pointer;
+}
+
+.top{
+    position:sticky;
+    top:0;
+    z-index:20;
+    background:white;
+    border-bottom:1px solid #eee;
+}
+
+.header{
+    max-width:1000px;
+    margin:auto;
+    height:64px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 16px;
+}
+
+.logo{
+    font-size:21px;
+    font-weight:800;
+}
+
+.logo span{
+    font-size:12px;
+    color:#888;
+    margin-left:6px;
+    font-weight:400;
+}
+
+.user-mini{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:#666;
+    font-size:13px;
+}
+
+.avatar{
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    background:#e9eefc;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+}
+
+.container{
+    max-width:1000px;
+    margin:auto;
+    padding:18px 14px 100px;
+}
+
+.nav{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    margin-bottom:18px;
+    padding-bottom:4px;
+}
+
+.nav button{
+    flex:none;
+    border:0;
+    background:white;
+    padding:10px 15px;
+    border-radius:20px;
+    color:#666;
+}
+
+.nav button.active{
+    background:#222;
+    color:white;
+}
+
+.card{
+    background:white;
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:14px;
+    box-shadow:0 2px 12px rgba(0,0,0,.04);
+}
+
+.composer textarea{
+    width:100%;
+    min-height:100px;
+    resize:vertical;
+    border:1px solid #e2e5eb;
+    border-radius:12px;
+    padding:12px;
+    outline:none;
+}
+
+.composer textarea:focus,
+input:focus,
+select:focus{
+    border-color:#777;
+}
+
+.row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+}
+
+.space{
+    justify-content:space-between;
+}
+
+select,
+input{
+    border:1px solid #e2e5eb;
+    background:white;
+    border-radius:10px;
+    padding:9px 11px;
+    outline:none;
+}
+
+.primary{
+    border:0;
+    background:#222;
+    color:white;
+    border-radius:10px;
+    padding:10px 17px;
+}
+
+.secondary{
+    border:1px solid #ddd;
+    background:white;
+    color:#444;
+    border-radius:10px;
+    padding:9px 14px;
+}
+
+.danger{
+    color:#d33;
+}
+
+.search{
+    width:100%;
+    margin-bottom:14px;
+}
+
+.search input{
+    width:100%;
+    padding:12px;
+}
+
+.post{
+    position:relative;
+}
+
+.post-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.post-info{
+    flex:1;
+}
+
+.nickname{
+    font-weight:700;
+}
+
+.time{
+    color:#999;
+    font-size:12px;
+    margin-top:2px;
+}
+
+.category{
+    display:inline-block;
+    font-size:12px;
+    padding:4px 8px;
+    border-radius:8px;
+    background:#f1f3f7;
+    color:#666;
+}
+
+.post-content{
+    margin:16px 0;
+    white-space:pre-wrap;
+    line-height:1.7;
+    word-break:break-word;
+}
+
+.post-actions{
+    display:flex;
+    gap:6px;
+    border-top:1px solid #f0f0f0;
+    padding-top:10px;
+}
+
+.action{
+    border:0;
+    background:white;
+    color:#666;
+    padding:7px 10px;
+    border-radius:8px;
+}
+
+.action:hover{
+    background:#f5f5f5;
+}
+
+.action.active{
+    color:#111;
+    font-weight:700;
+}
+
+.comments{
+    display:none;
+    margin-top:12px;
+    background:#fafafa;
+    border-radius:12px;
+    padding:12px;
+}
+
+.comment{
+    padding:9px 0;
+    border-bottom:1px solid #eee;
+}
+
+.comment:last-child{
+    border-bottom:0;
+}
+
+.comment-top{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+}
+
+.comment-content{
+    margin-top:4px;
+    line-height:1.5;
+}
+
+.comment-box{
+    display:flex;
+    gap:7px;
+    margin-top:10px;
+}
+
+.comment-box input{
+    flex:1;
+}
+
+.empty{
+    text-align:center;
+    color:#999;
+    padding:45px 10px;
+}
+
+.profile{
+    text-align:center;
+    padding:30px 10px;
+}
+
+.big-avatar{
+    width:72px;
+    height:72px;
+    border-radius:50%;
+    background:#edf1ff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    margin:auto;
+    font-size:35px;
+}
+
+.profile h2{
+    margin:12px 0 5px;
+}
+
+.profile p{
+    color:#888;
+    font-size:13px;
+}
+
+.profile-buttons{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    margin-top:15px;
+    flex-wrap:wrap;
+}
+
+.section-title{
+    font-size:18px;
+    font-weight:800;
+    margin:10px 0 14px;
+}
+
+.admin-box{
+    border:1px solid #eee;
+    border-radius:12px;
+    padding:15px;
+    margin-bottom:10px;
+}
+
+.admin-label{
+    font-size:13px;
+    color:#888;
+}
+
+.notice{
+    padding:12px;
+    border-radius:10px;
+    background:#f6f7f9;
+    color:#666;
+    font-size:13px;
+    margin-bottom:14px;
+}
+
+.bottom-nav{
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+    height:62px;
+    background:white;
+    border-top:1px solid #eee;
+    display:flex;
+    justify-content:center;
+    z-index:30;
+}
+
+.bottom-inner{
+    width:min(100%,700px);
+    display:flex;
+    justify-content:space-around;
+}
+
+.bottom-nav button{
+    border:0;
+    background:white;
+    color:#777;
+    font-size:12px;
+    min-width:65px;
+}
+
+.bottom-nav button span{
+    display:block;
+    font-size:20px;
+    margin-bottom:2px;
+}
+
+.bottom-nav button.active{
+    color:#111;
+    font-weight:700;
+}
+
+.modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.4);
+    z-index:100;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+}
+
+.modal-box{
+    width:min(100%,420px);
+    background:white;
+    border-radius:16px;
+    padding:20px;
+}
+
+.modal-box h3{
+    margin-top:0;
+}
+
+.modal-box input{
+    width:100%;
+    margin:8px 0 14px;
+}
+
+@media(max-width:600px){
+
+    .header{
+        height:58px;
+    }
+
+    .logo{
+        font-size:18px;
+    }
+
+    .container{
+        padding-top:12px;
+    }
+
+    .card{
+        border-radius:13px;
+        padding:14px;
+    }
+
+    .composer textarea{
+        min-height:90px;
+    }
+
+    .post-actions{
+        overflow-x:auto;
+    }
+
+    .action{
+        white-space:nowrap;
+    }
+
+    .user-mini span{
+        display:none;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="top">
+    <div class="header">
+        <div class="logo">
+            🏫 校园论坛
+            <span>Campus Forum</span>
+        </div>
+
+        <div class="user-mini">
+            <div class="avatar" id="topAvatar">👤</div>
+            <span id="topNickname">正在登录...</span>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="nav">
+        <button class="active" onclick="showPage('home',this)">🏠 首页</button>
+        <button onclick="showPage('hot',this)">🔥 热门</button>
+        <button onclick="showPage('confession',this)">💌 表白墙</button>
+        <button onclick="showPage('mine',this)">👤 我的</button>
+        <button id="adminNav" onclick="showPage('admin',this)" style="display:none">
+            🛡️ 管理员
+        </button>
+    </div>
+
+    <!-- 首页 -->
+    <section id="homePage">
+
+        <div class="search">
+            <input
+                id="searchInput"
+                placeholder="🔎 搜索帖子..."
+                oninput="renderCurrentPosts()"
+            >
+        </div>
+
+        <div class="card composer">
+
+            <div class="section-title">✏️ 发布内容</div>
+
+            <textarea
+                id="postContent"
+                maxlength="2000"
+                placeholder="分享一下校园里的新鲜事吧..."
+            ></textarea>
+
+            <div class="row space" style="margin-top:10px">
+
+                <select id="postCategory">
+                    <option value="校园">校园</option>
+                    <option value="学习">学习</option>
+                    <option value="生活">生活</option>
+                    <option value="吐槽">吐槽</option>
+                    <option value="求助">求助</option>
+                    <option value="失物招领">失物招领</option>
+                    <option value="表白墙">💌 表白墙</option>
+                </select>
+
+                <button class="primary" onclick="publishPost()">
+                    发布
+                </button>
+
+            </div>
+
+        </div>
+
+        <div id="homePosts"></div>
+
+    </section>
+
+
+    <!-- 热门 -->
+    <section id="hotPage" style="display:none">
+
+        <div class="section-title">🔥 热门帖子</div>
+
+        <div id="hotPosts"></div>
+
+    </section>
+
+
+    <!-- 表白墙 -->
+    <section id="confessionPage" style="display:none">
+
+        <div class="card">
+            <div class="section-title">💌 表白墙</div>
+
+            <div class="notice">
+                在这里发布你的校园表白、祝福或者想说的话。
+                可以选择匿名发布。
+            </div>
+
+            <textarea
+                id="confessionContent"
+                maxlength="2000"
+                style="width:100%;min-height:110px;border:1px solid #ddd;border-radius:12px;padding:12px"
+                placeholder="想对 TA 说些什么？"
+            ></textarea>
+
+            <button
+                class="primary"
+                style="margin-top:10px"
+                onclick="publishConfession()"
+            >
+                💌 发布表白
+            </button>
+        </div>
+
+        <div id="confessionPosts"></div>
+
+    </section>
+
+
+    <!-- 我的 -->
+    <section id="minePage" style="display:none">
+
+        <div class="card profile">
+
+            <div class="big-avatar" id="profileAvatar">
+                👤
+            </div>
+
+            <h2 id="profileNickname">
+                匿名用户
+            </h2>
+
+            <p id="profileId"></p>
+
+            <div class="profile-buttons">
+
+                <button
+                    class="secondary"
+                    onclick="openNicknameModal()"
+                >
+                    ✏️ 修改昵称
+                </button>
+
+                <button
+                    class="secondary"
+                    onclick="showMyPosts()"
+                >
+                    📝 我的帖子
+                </button>
+
+                <button
+                    class="secondary"
+                    onclick="showMyFavorites()"
+                >
+                    ⭐ 我的收藏
+                </button>
+
+            </div>
+
+        </div>
+
+        <div id="mineContent"></div>
+
+    </section>
+
+
+    <!-- 管理员 -->
+    <section id="adminPage" style="display:none">
+
+        <div class="card">
+
+            <div class="section-title">
+                🛡️ 管理员中心
+            </div>
+
+            <div class="notice">
+                只有 profiles 表中的 is-admin 为 true 的账号才能看到这里。
+            </div>
+
+            <div class="admin-box">
+                <div class="admin-label">当前账号</div>
+                <div id="adminNickname"></div>
+            </div>
+
+            <div class="admin-box">
+                <div class="admin-label">帖子数量</div>
+                <div id="adminPostCount">加载中...</div>
+            </div>
+
+            <div class="admin-box">
+                <div class="admin-label">评论数量</div>
+                <div id="adminCommentCount">加载中...</div>
+            </div>
+
+        </div>
+
+        <div class="section-title">
+            📋 最近帖子
+        </div>
+
+        <div id="adminPosts"></div>
+
+    </section>
+
+</div>
+
+
+<!-- 底部导航 -->
+<div class="bottom-nav">
+
+    <div class="bottom-inner">
+
+        <button class="active" onclick="showPage('home',this)">
+            <span>🏠</span>
+            首页
+        </button>
+
+        <button onclick="showPage('hot',this)">
+            <span>🔥</span>
+            热门
+        </button>
+
+        <button onclick="showPage('confession',this)">
+            <span>💌</span>
+            表白
+        </button>
+
+        <button onclick="showPage('mine',this)">
+            <span>👤</span>
+            我的
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- 修改昵称 -->
+<div class="modal" id="nicknameModal">
+
+    <div class="modal-box">
+
+        <h3>修改昵称</h3>
+
+        <input
+            id="nicknameInput"
+            maxlength="20"
+            placeholder="请输入昵称"
+        >
+
+        <div class="row" style="justify-content:flex-end">
+
+            <button
+                class="secondary"
+                onclick="closeNicknameModal()"
+            >
+                取消
+            </button>
+
+            <button
+                class="primary"
+                onclick="saveNickname()"
+            >
+                保存
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* ==============================
+   Supabase
+============================== */
+
+const SUPABASE_URL =
+"https://pjfwkylyeiaymwajtztt.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_WfdLfZvV9z4eccE30RL0Ww_3Bkjmsl4";
+
+const client =
+window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+
+/* ==============================
+   全局变量
+============================== */
+
+let currentUser = null;
+let currentProfile = null;
+let allPosts = [];
+let allComments = [];
+let allLikes = [];
+let allFavorites = [];
+
+let currentPage = "home";
+
+
+/* ==============================
+   初始化
+============================== */
+
+async function init(){
+
+    try{
+
+        let {
+            data:{
+                session
+            }
+        } = await client.auth.getSession();
+
+        if(!session){
+
+            const result =
+                await client.auth.signInAnonymously();
+
+            if(result.error){
+                throw result.error;
+            }
+
+            session = result.data.session;
+        }
+
+        currentUser =
+            session.user;
+
+        await createOrLoadProfile();
+
+        updateUserUI();
+
+        await loadAllData();
+
+    }catch(error){
+
+        console.error(error);
+
+        alert(
+            "登录失败：\n" +
+            (error.message || error)
+        );
+
+    }
+
+}
+
+
+/* ==============================
+   创建/读取个人资料
+============================== */
+
+async function createOrLoadProfile(){
+
+    let {
+        data,
+        error
+    } = await client
+        .from("profiles")
+        .select("*")
+        .eq("id",currentUser.id)
+        .maybeSingle();
+
+    if(error){
+        console.error(error);
+        return;
+    }
+
+    if(!data){
+
+        const {
+            data:newProfile,
+            error:insertError
+        } = await client
+            .from("profiles")
+            .insert({
+
+                id:currentUser.id,
+
+                nickname:"匿名用户",
+
+                avatar:"",
+
+                "is-admin":false
+
+            })
+            .select()
+            .single();
+
+        if(insertError){
+
+            console.error(
+                "创建 profile 失败:",
+                insertError
+            );
+
+            return;
+        }
+
+        currentProfile =
+            newProfile;
+
+    }else{
+
+        currentProfile =
+            data;
+
+    }
+
+}
+
+
+/* ==============================
+   用户界面
+============================== */
+
+function updateUserUI(){
+
+    if(!currentProfile)
+        return;
+
+    const nickname =
+        currentProfile.nickname ||
+        "匿名用户";
+
+    document.getElementById(
+        "topNickname"
+    ).textContent = nickname;
+
+    document.getElementById(
+        "profileNickname"
+    ).textContent = nickname;
+
+    document.getElementById(
+        "profileId"
+    ).textContent =
+        "用户 ID：" +
+        currentUser.id.substring(0,8) +
+        "...";
+
+    document.getElementById(
+        "adminNickname"
+    ).textContent = nickname;
+
+    if(currentProfile["is-admin"]){
+
+        document.getElementById(
+            "adminNav"
+        ).style.display="block";
+
+    }
+
+}
+
+
+/* ==============================
+   加载全部数据
+============================== */
+
+async function loadAllData(){
+
+    await Promise.all([
+
+        loadPosts(),
+
+        loadComments(),
+
+        loadLikes(),
+
+        loadFavorites()
+
+    ]);
+
+    renderCurrentPosts();
+
+    renderHotPosts();
+
+    renderConfessions();
+
+    loadAdminData();
+
+}
+
+
+/* ==============================
+   加载帖子
+============================== */
+
+async function loadPosts(){
+
+    const {
+        data,
+        error
+    } = await client
+        .from("posts")
+        .select("*")
+        .order("id",{ascending:false});
+
+    if(error){
+
+        console.error(
+            "posts:",
+            error
+        );
+
+        return;
+    }
+
+    allPosts =
+        data || [];
+
+}
+
+
+/* ==============================
+   评论
+============================== */
+
+async function loadComments(){
+
+    const {
+        data,
+        error
+    } = await client
+        .from("comments")
+        .select("*")
+        .order("id",{ascending:true});
+
+    if(error){
+
+        console.error(
+            "comments:",
+            error
+        );
+
+        return;
+    }
+
+    allComments =
+        data || [];
+
+}
+
+
+/* ==============================
+   点赞
+============================== */
+
+async function loadLikes(){
+
+    const {
+        data,
+        error
+    } = await client
+        .from("post_likes")
+        .select("*");
+
+    if(error){
+
+        console.error(
+            "likes:",
+            error
+        );
+
+        return;
+    }
+
+    allLikes =
+        data || [];
+
+}
+
+
+/* ==============================
+   收藏
+============================== */
+
+async function loadFavorites(){
+
+    const {
+        data,
+        error
+    } = await client
+        .from("post_favorites")
+        .select("*");
+
+    if(error){
+
+        console.error(
+            "favorites:",
+            error
+        );
+
+        return;
+    }
+
+    allFavorites =
+        data || [];
+
+}
+
+
+/* ==============================
+   页面切换
+============================== */
+
+function showPage(page,button){
+
+    currentPage =
+        page;
+
+    const pages = [
+        "home",
+        "hot",
+        "confession",
+        "mine",
+        "admin"
+    ];
+
+    pages.forEach(p=>{
+
+        const el =
+            document.getElementById(
+                p+"Page"
+            );
+
+        if(el){
+            el.style.display =
+                p===page
+                ? "block"
+                : "none";
+        }
+
+    });
+
+    document.querySelectorAll(
+        ".nav button"
+    ).forEach(b=>{
+        b.classList.remove("active");
+    });
+
+    document.querySelectorAll(
+        ".bottom-nav button"
+    ).forEach(b=>{
+        b.classList.remove("active");
+    });
+
+    if(button){
+        button.classList.add("active");
+    }
+
+    if(page==="home")
+        renderCurrentPosts();
+
+    if(page==="hot")
+        renderHotPosts();
+
+    if(page==="confession")
+        renderConfessions();
+
+    if(page==="mine")
+        showMyPosts();
+
+    if(page==="admin")
+        loadAdminData();
+
+}
+
+
+/* ==============================
+   发布普通帖子
+============================== */
+
+async function publishPost(){
+
+    const content =
+        document
+        .getElementById(
+            "postContent"
+        )
+        .value
+        .trim();
+
+    const category =
+        document
+        .getElementById(
+            "postCategory"
+        )
+        .value;
+
+    if(!content){
+
+        alert("请输入内容");
+
+        return;
+    }
+
+    const {
+        error
+    } = await client
+        .from("posts")
+        .insert({
+
+            author_id:
+                currentUser.id,
+
+            category:
+                category,
+
+            content:
+                content
+
+        });
+
+    if(error){
+
+        console.error(error);
+
+        alert(
+            "发布失败：\n" +
+            error.message
+        );
+
+        return;
+    }
+
+    document.getElementById(
+        "postContent"
+    ).value="";
+
+    await loadAllData();
+
+    alert("发布成功！");
+
+}
+
+
+/* ==============================
+   发布表白
+============================== */
+
+async function publishConfession(){
+
+    const content =
+        document
+        .getElementById(
+            "confessionContent"
+        )
+        .value
+        .trim();
+
+    if(!content){
+
+        alert("请输入表白内容");
+
+        return;
+    }
+
+    const {
+        error
+    } = await client
+        .from("posts")
+        .insert({
+
+            author_id:
+                currentUser.id,
+
+            category:
+                "表白墙",
+
+            content:
+                content
+
+        });
+
+    if(error){
+
+        alert(
+            "发布失败：\n"+
+            error.message
+        );
+
+        return;
+    }
+
+    document.getElementById(
+        "confessionContent"
+    ).value="";
+
+    await loadAllData();
+
+    alert("表白发布成功 💌");
+
+}
+
+
+/* ==============================
+   帖子 HTML
+============================== */
+
+function postHTML(post){
+
+    const profile =
+        getProfileForPost(post);
+
+    const nickname =
+        profile
+        ? profile.nickname
+        : (
+            post.author_id === currentUser.id
+            ? currentProfile.nickname
+            : "匿名用户"
+        );
+
+    const likeCount =
+        allLikes.filter(
+            x =>
+            x.post_id === post.id
+        ).length;
+
+    const favoriteCount =
+        allFavorites.filter(
+            x =>
+            x.post_id === post.id
+        ).length;
+
+    const liked =
+        allLikes.some(
+            x =>
+            x.post_id === post.id &&
+            x.user_id === currentUser.id
+        );
+
+    const favorited =
+        allFavorites.some(
+            x =>
+            x.post_id === post.id &&
+            x.user_id === currentUser.id
+        );
+
+    const comments =
+        allComments.filter(
+            x =>
+            x.post_id === post.id
+        );
+
+    const canDelete =
+        post.author_id === currentUser.id ||
+        currentProfile?.["is-admin"];
+
+    return `
+
+    <div class="card post" id="post-${post.id}">
+
+        <div class="post-head">
+
+            <div class="avatar">
+                👤
+            </div>
+
+            <div class="post-info">
+
+                <div class="nickname">
+                    ${escapeHTML(nickname)}
+                </div>
+
+                <div class="time">
+                    ${escapeHTML(post.category || "校园")}
+                </div>
+
+            </div>
+
+            <div class="category">
+                ${escapeHTML(post.category || "校园")}
+            </div>
+
+        </div>
+
+        <div class="post-content">
+            ${escapeHTML(post.content)}
+        </div>
+
+        <div class="post-actions">
+
+            <button
+                class="action ${liked ? "active":""}"
+                onclick="toggleLike('${post.id}')"
+            >
+                ${liked ? "❤️":"🤍"}
+                ${likeCount}
+            </button>
+
+            <button
+                class="action ${favorited ? "active":""}"
+                onclick="toggleFavorite('${post.id}')"
+            >
+                ${favorited ? "⭐":"☆"}
+                ${favoriteCount}
+            </button>
+
+            <button
+                class="action"
+                onclick="toggleComments('${post.id}')"
+            >
+                💬 ${comments.length}
+            </button>
+
+            ${
+                canDelete
+                ?
+                `
+                <button
+                    class="action danger"
+                    onclick="deletePost('${post.id}')"
+                >
+                    🗑️
+                </button>
+                `
+                :""
+            }
+
+        </div>
+
+        <div
+            class="comments"
+            id="comments-${post.id}"
+        >
+
+            <div id="comment-list-${post.id}">
+                ${commentsHTML(comments)}
+            </div>
+
+            <div class="comment-box">
+
+                <input
+                    id="comment-input-${post.id}"
+                    placeholder="说点什么..."
+                    maxlength="500"
+                >
+
+                <button
+                    class="primary"
+                    onclick="addComment('${post.id}')"
+                >
+                    发送
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    `;
+
+}
+
+
+/* ==============================
+   获取帖子作者
+============================== */
+
+function getProfileForPost(post){
+
+    if(
+        post.author_id ===
+        currentUser.id
+    ){
+        return currentProfile;
+    }
+
+    return null;
+
+}
+
+
+/* ==============================
+   评论 HTML
+============================== */
+
+function commentsHTML(comments){
+
+    if(!comments.length){
+
+        return `
+            <div style="color:#999;font-size:13px">
+                暂无评论
+            </div>
+        `;
+
+    }
+
+    return comments.map(c=>{
+
+        const canDelete =
+            c.author_id === currentUser.id ||
+            currentProfile?.["is-admin"];
+
+        return `
+
+        <div class="comment">
+
+            <div class="comment-top">
+
+                <b>
+                    ${c.author_id===currentUser.id
+                    ? escapeHTML(currentProfile.nickname)
+                    : "匿名用户"}
+                </b>
+
+                ${
+                    canDelete
+                    ?
+                    `
+                    <button
+                        class="action danger"
+                        onclick="deleteComment('${c.id}')"
+                    >
+                        删除
+                    </button>
+                    `
+                    :""
+                }
+
+            </div>
+
+            <div class="comment-content">
+                ${escapeHTML(c.content)}
+            </div>
+
+        </div>
+
+        `;
+
+    }).join("");
+
+}
+
+
+/* ==============================
+   首页帖子
+============================== */
+
+function renderCurrentPosts(){
+
+    const container =
+        document.getElementById(
+            "homePosts"
+        );
+
+    const keyword =
+        document.getElementById(
+            "searchInput"
+        )?.value
+        .trim()
+        .toLowerCase() || "";
+
+    let posts =
+        [...allPosts];
+
+    if(keyword){
+
+        posts =
+            posts.filter(p=>
+                String(p.content)
+                .toLowerCase()
+                .includes(keyword)
+                ||
+                String(p.category)
+                .toLowerCase()
+                .includes(keyword)
+            );
+
+    }
+
+    if(!posts.length){
+
+        container.innerHTML =
+            `<div class="empty">
+                暂时没有帖子
+            </div>`;
+
+        return;
+    }
+
+    container.innerHTML =
+        posts.map(postHTML).join("");
+
+}
+
+
+/* ==============================
+   热门
+============================== */
+
+function renderHotPosts(){
+
+    const container =
+        document.getElementById(
+            "hotPosts"
+        );
+
+    const posts =
+        [...allPosts]
+        .sort((a,b)=>{
+
+            const aCount =
+                allLikes.filter(
+                    x=>x.post_id===a.id
+                ).length;
+
+            const bCount =
+                allLikes.filter(
+                    x=>x.post_id===b.id
+                ).length;
+
+            return bCount-aCount;
+
+        });
+
+    if(!posts.length){
+
+        container.innerHTML =
+            `<div class="empty">
+                暂时没有帖子
+            </div>`;
+
+        return;
+    }
+
+    container.innerHTML =
+        posts.map(postHTML).join("");
+
+}
+
+
+/* ==============================
+   表白墙
+============================== */
+
+function renderConfessions(){
+
+    const container =
+        document.getElementById(
+            "confessionPosts"
+        );
+
+    const posts =
+        allPosts.filter(
+            p =>
+            p.category ===
+            "表白墙"
+        );
+
+    if(!posts.length){
+
+        container.innerHTML =
+            `<div class="empty">
+                💌 还没有表白内容
+            </div>`;
+
+        return;
+    }
+
+    container.innerHTML =
+        posts.map(postHTML).join("");
+
+}
+
+
+/* ==============================
+   点赞
+============================== */
+
+async function toggleLike(postId){
+
+    const existing =
+        allLikes.find(
+            x =>
+            x.post_id === postId &&
+            x.user_id === currentUser.id
+        );
+
+    if(existing){
+
+        const {
+            error
+        } = await client
+            .from("post_likes")
+            .delete()
+            .eq("post_id",postId)
+            .eq("user_id",currentUser.id);
+
+        if(error){
+
+            alert(error.message);
+
+            return;
+        }
+
+    }else{
+
+        const {
+            error
+        } = await client
+            .from("post_likes")
+            .insert({
+
+                post_id:
+                    postId,
+
+                user_id:
+                    currentUser.id
+
+            });
+
+        if(error){
+
+            alert(error.message);
+
+            return;
+        }
+
+    }
+
+    await loadAllData();
+
+}
+
+
+/* ==============================
+   收藏
+============================== */
+
+async function toggleFavorite(postId){
+
+    const existing =
+        allFavorites.find(
+            x =>
+            x.post_id === postId &&
+            x.user_id === currentUser.id
+        );
+
+    if(existing){
+
+        const {
+            error
+        } = await client
+            .from("post_favorites")
+            .delete()
+            .eq("post_id",postId)
+            .eq("user_id",currentUser.id);
+
+        if(error){
+
+            alert(error.message);
+
+            return;
+        }
+
+    }else{
+
+        const {
+            error
+        } = await client
+            .from("post_favorites")
+            .insert({
+
+                post_id:
+                    postId,
+
+                user_id:
+                    currentUser.id
+
+            });
+
+        if(error){
+
+            alert(error.message);
+
+            return;
+        }
+
+    }
+
+    await loadAllData();
+
+}
+
+
+/* ==============================
+   评论开关
+============================== */
+
+function toggleComments(postId){
+
+    const box =
+        document.getElementById(
+            "comments-"+postId
+        );
+
+    if(
+        box.style.display ===
+        "block"
+    ){
+
+        box.style.display =
+            "none";
+
+    }else{
+
+        box.style.display =
+            "block";
+
+    }
+
+}
+
+
+/* ==============================
+   添加评论
+============================== */
+
+async function addComment(postId){
+
+    const input =
+        document.getElementById(
+            "comment-input-"+postId
+        );
+
+    const content =
+        input.value.trim();
+
+    if(!content){
+
+        return;
+    }
+
+    const {
+        error
+    } = await client
+        .from("comments")
+        .insert({
+
+            post_id:
+                postId,
+
+            author_id:
+                currentUser.id,
+
+            content:
+                content
+
+        });
+
+    if(error){
+
+        alert(
+            "评论失败：\n"+
+            error.message
+        );
+
+        return;
+    }
+
+    input.value="";
+
+    await loadAllData();
+
+}
+
+
+/* ==============================
+   删除帖子
+============================== */
+
+async function deletePost(postId){
+
+    if(
+        !confirm(
+            "确定要删除这个帖子吗？"
+        )
+    ){
+        return;
+    }
+
+    const {
+        error
+    } = await client
+        .from("posts")
+        .delete()
+        .eq("id",postId);
+
+    if(error){
+
+        alert(
+            "删除失败：\n"+
+            error.message
+        );
+
+        return;
+    }
+
+    await loadAllData();
+
+}
+
+
+/* ==============================
+   删除评论
+============================== */
+
+async function deleteComment(commentId){
+
+    if(
+        !confirm(
+            "确定删除这条评论吗？"
+        )
+    ){
+        return;
+    }
+
+    const {
+        error
+    } = await client
+        .from("comments")
+        .delete()
+        .eq("id",commentId);
+
+    if(error){
+
+        alert(error.message);
+
+        return;
+    }
+
+    await loadAllData();
+
+}
+
+
+/* ==============================
+   我的帖子
+============================== */
+
+function showMyPosts(){
+
+    const container =
+        document.getElementById(
+            "mineContent"
+        );
+
+    const posts =
+        allPosts.filter(
+            p =>
+            p.author_id ===
+            currentUser.id
+        );
+
+    if(!posts.length){
+
+        container.innerHTML =
+            `<div class="card empty">
+                你还没有发布过帖子
+            </div>`;
+
+        return;
+    }
+
+    container.innerHTML =
+        posts.map(postHTML).join("");
+
+}
+
+
+/* ==============================
+   我的收藏
+============================== */
+
+function showMyFavorites(){
+
+    const container =
+        document.getElementById(
+            "mineContent"
+        );
+
+    const ids =
+        allFavorites
+        .filter(
+            x =>
+            x.user_id ===
+            currentUser.id
+        )
+        .map(x=>x.post_id);
+
+    const posts =
+        allPosts.filter(
+            p =>
+            ids.includes(p.id)
+        );
+
+    if(!posts.length){
+
+        container.innerHTML =
+            `<div class="card empty">
+                你还没有收藏帖子
+            </div>`;
+
+        return;
+    }
+
+    container.innerHTML =
+        posts.map(postHTML).join("");
+
+}
+
+
+/* ==============================
+   修改昵称
+============================== */
+
+function openNicknameModal(){
+
+    document.getElementById(
+        "nicknameInput"
+    ).value =
+        currentProfile.nickname ||
+        "";
+
+    document.getElementById(
+        "nicknameModal"
+    ).style.display =
+        "flex";
+
+}
+
+
+function closeNicknameModal(){
+
+    document.getElementById(
+        "nicknameModal"
+    ).style.display =
+        "none";
+
+}
+
+
+async function saveNickname(){
+
+    const nickname =
+        document
+        .getElementById(
+            "nicknameInput"
+        )
+        .value
+        .trim();
+
+    if(!nickname){
+
+        alert("昵称不能为空");
+
+        return;
+    }
+
+    if(nickname.length>20){
+
+        alert("昵称最多20个字");
+
+        return;
+    }
+
+    const {
+        data,
+        error
+    } = await client
+        .from("profiles")
+        .update({
+
+            nickname:
+                nickname
+
+        })
+        .eq("id",currentUser.id)
+        .select()
+        .single();
+
+    if(error){
+
+        alert(
+            "修改失败：\n"+
+            error.message
+        );
+
+        return;
+    }
+
+    currentProfile =
+        data;
+
+    updateUserUI();
+
+    closeNicknameModal();
+
+    alert("昵称修改成功");
+
+}
+
+
+/* ==============================
+   管理员
+============================== */
+
+async function loadAdminData(){
+
+    if(
+        !currentProfile?.["is-admin"]
+    ){
+        return;
+    }
+
+    document.getElementById(
+        "adminPostCount"
+    ).textContent =
+        allPosts.length;
+
+    document.getElementById(
+        "adminCommentCount"
+    ).textContent =
+        allComments.length;
+
+    const container =
+        document.getElementById(
+            "adminPosts"
+        );
+
+    if(!container)
+        return;
+
+    container.innerHTML =
+        allPosts
+        .map(postHTML)
+        .join("");
+
+}
+
+
+/* ==============================
+   HTML 防注入
+============================== */
+
+function escapeHTML(value){
+
+    return String(value ?? "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+
+}
+
+
+/* ==============================
+   启动
+============================== */
+
+init();
+
+</script>
+
+</body>
+</html>
