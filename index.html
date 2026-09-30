@@ -273,33 +273,96 @@ function displayName(id,anonymous=false){if(anonymous)return '匿名同学';retu
 function adminFlag(id){return !!profileFor(id)?.is_admin}
 function relativeRefresh(){renderPosts();renderMyPage();}
 
+let initRetryUsed=false;
+let debugBox=null;
+function errorText(e){
+  if(!e)return '未知错误';
+  const parts=[e.message,e.code,e.status,e.details,e.hint].filter(v=>v!==undefined&&v!==null&&String(v)!=='');
+  return parts.length?parts.join(' · '):String(e);
+}
+function showDebugError(stage,e){
+  const msg=errorText(e);
+  console.error('[论坛连接失败]',stage,e);
+  toast('连接失败：'+stage);
+  if(!debugBox){
+    debugBox=document.createElement('div');
+    debugBox.style.cssText='position:fixed;left:14px;right:14px;bottom:14px;z-index:99999;background:#fff;border:1px solid #fecaca;border-radius:14px;box-shadow:0 10px 30px rgba(15,23,42,.18);padding:14px;color:#334155;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;';
+    document.body.appendChild(debugBox);
+  }
+  debugBox.innerHTML='<b style="color:#dc2626">论坛连接失败</b><div style="margin-top:6px"><b>出错位置：</b>'+esc(stage)+'</div><div style="margin-top:4px;word-break:break-word"><b>详细信息：</b>'+esc(msg)+'</div><div style="margin-top:8px;color:#64748b;font-size:12px">请把这段“详细信息”截图发给我，我就能继续定位。页面样式和数据库数据不会因此改变。</div>';
+}
+async function retryable(fn,label,retries=2){
+  let last;
+  for(let i=0;i<=retries;i++){
+    try{return await fn();}
+    catch(e){
+      last=e;
+      if(i<retries) await new Promise(r=>setTimeout(r,700*(i+1)));
+    }
+  }
+  const e=new Error(label+'：'+errorText(last));
+  e.original=last;
+  e.stage=label;
+  throw e;
+}
+async function getOrCreateSession(){
+  const result=await client.auth.getSession();
+  if(result.error)throw result.error;
+  let session=result.data?.session;
+  if(!session){
+    const r=await client.auth.signInAnonymously();
+    if(r.error)throw r.error;
+    session=r.data?.session;
+  }
+  if(!session?.user)throw new Error('没有获得有效的登录 Session');
+  return session;
+}
 async function init(){
   try{
-    let {data:{session}}=await client.auth.getSession();
-    if(!session){const r=await client.auth.signInAnonymously();if(r.error)throw r.error;session=r.data.session;}
+    let session=await retryable(getOrCreateSession,'匿名登录 / Session',2);
     currentUser=session.user;
-    await createOrLoadProfile();
-    await loadAllData();
+    try{
+      await retryable(createOrLoadProfile,'读取个人资料',2);
+    }catch(profileError){
+      const raw=profileError.original||profileError;
+      const status=raw?.status||raw?.code;
+      if(!initRetryUsed && (status===401||status===403||String(raw?.code||'').toLowerCase().includes('jwt'))){
+        initRetryUsed=true;
+        await client.auth.signOut({scope:'local'});
+        session=await retryable(getOrCreateSession,'重新匿名登录',2);
+        currentUser=session.user;
+        await retryable(createOrLoadProfile,'重新读取个人资料',2);
+      }else throw profileError;
+    }
+    await retryable(loadAllData,'加载论坛数据',2);
     bindEvents();
     updateUserUI();
     renderPosts();
     renderMyPage();
     setInterval(relativeRefresh,30000);
-  }catch(e){console.error(e);toast('连接论坛失败，请检查 Supabase 配置');}
+  }catch(e){
+    showDebugError(e.stage||'初始化论坛',e.original||e);
+  }
 }
 
 async function createOrLoadProfile(){
   const {data,error}=await client.from('profiles').select('*').eq('id',currentUser.id).maybeSingle();
   if(error){console.error(error);throw error;}
   currentProfile=data;
-  if(!currentProfile) throw new Error('profile 不存在，请确认 handle_new_user trigger 已启用');
+  if(!currentProfile) throw new Error('profile 不存在：当前匿名用户没有对应的 profiles 记录');
 }
-async function loadAllData(){await Promise.all([loadProfiles(),loadPosts(),loadComments(),loadLikes(),loadFavorites()]);}
-async function loadProfiles(){const {data,error}=await client.from('profiles').select('id,nickname,avatar,is_admin');if(error)throw error;allProfiles=data||[];currentProfile=allProfiles.find(p=>p.id===currentUser.id)||currentProfile;}
-async function loadPosts(){const {data,error}=await client.from('posts').select('*').order('created_at',{ascending:false});if(error)throw error;posts=data||[];}
-async function loadComments(){const {data,error}=await client.from('comments').select('*').order('created_at',{ascending:true});if(error)throw error;comments=data||[];}
-async function loadLikes(){const {data,error}=await client.from('post_likes').select('post_id,user_id,created_at');if(error)throw error;likes=data||[];}
-async function loadFavorites(){const {data,error}=await client.from('post_favorites').select('post_id,user_id,created_at');if(error)throw error;favorites=data||[];}
+async function loadAllData(){
+  await loadProfiles();
+  await loadPosts();
+  await loadComments();
+  await loadLikes();
+  await loadFavorites();
+}
+async function loadProfiles(){const {data,error}=await client.from('profiles').select('id,nickname,avatar,is_admin');if(error){error.stage='读取 profiles';throw error;}allProfiles=data||[];currentProfile=allProfiles.find(p=>p.id===currentUser.id)||currentProfile;}
+async function loadPosts(){const {data,error}=await client.from('posts').select('*').order('created_at',{ascending:false});if(error){error.stage='读取 posts';throw error;}posts=data||[];}
+async function loadComments(){const {data,error}=await client.from('comments').select('*').order('created_at',{ascending:true});if(error){error.stage='读取 comments';throw error;}comments=data||[];}
+async function loadLikes(){const {data,error}=await client.from('post_likes').select('post_id,user_id,created_at');if(error){error.stage='读取 post_likes';throw error;}likes=data||[];}
+async function loadFavorites(){const {data,error}=await client.from('post_favorites').select('post_id,user_id,created_at');if(error){error.stage='读取 post_favorites';throw error;}favorites=data||[];}
 
 function updateUserUI(){
   const av=currentProfile?.avatar||'😀',nick=currentProfile?.nickname||'同学';
