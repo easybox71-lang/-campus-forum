@@ -378,7 +378,7 @@ function bindEvents(){
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{myTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderMyPage();});
   $('userChip').onclick=openUser;$('mobileUserBtn').onclick=openUser;$('editProfileBtn').onclick=openUser;$('saveUserBtn').onclick=saveProfile;$('cancelUser').onclick=closeUser;
   document.querySelectorAll('.avatar-choice').forEach(b=>b.onclick=()=>{document.querySelectorAll('.avatar-choice').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')});
-  $('aboutBtn').onclick=()=>$('aboutModal').classList.remove('hide');$('closeAbout').onclick=()=>$('aboutModal').classList.add('hide');
+  const aboutBtn = $('aboutBtn'); const aboutModal = $('aboutModal'); const closeAbout = $('closeAbout'); if(aboutBtn && aboutModal) aboutBtn.onclick=()=>aboutModal.classList.remove('hide'); if(closeAbout && aboutModal) closeAbout.onclick=()=>aboutModal.classList.add('hide');
   $('adminEntryBtn').onclick=openAdmin;$('cancelAdmin').onclick=closeAdmin;
   $('publishBtn').onclick=publishPost;$('postImageInput').onchange=handlePostImages;$('textVal').oninput=()=>$('charCount').textContent=$('textVal').value.length+' / 2000';
   $('searchInput').oninput=e=>{searchText=e.target.value.trim().toLowerCase();renderPosts()};
