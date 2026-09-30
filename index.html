@@ -2,2128 +2,415 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-
-<title>校园论坛</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<title>思茅一中 · 校园论坛</title>
 <style>
-*{
-    box-sizing:border-box;
+:root{
+  --primary:#2563eb;--primary-dark:#1d4ed8;--primary-soft:#eff6ff;
+  --bg:#f1f5f9;--text:#0f172a;--sub:#475569;--muted:#94a3b8;
+  --border:#e2e8f0;--card:#fff;--danger:#ef4444;--star:#f59e0b;--ok:#16a34a;
+  --radius:16px;--shadow:0 1px 3px rgba(15,23,42,.06),0 8px 24px rgba(15,23,42,.06);
 }
-
-body{
-    margin:0;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
-    "PingFang SC","Microsoft YaHei",sans-serif;
-    background:#f5f7fb;
-    color:#222;
-}
-
-button,input,textarea,select{
-    font:inherit;
-}
-
-button{
-    cursor:pointer;
-}
-
-.top{
-    position:sticky;
-    top:0;
-    z-index:20;
-    background:white;
-    border-bottom:1px solid #eee;
-}
-
-.header{
-    max-width:1000px;
-    margin:auto;
-    height:64px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:0 16px;
-}
-
-.logo{
-    font-size:21px;
-    font-weight:800;
-}
-
-.logo span{
-    font-size:12px;
-    color:#888;
-    margin-left:6px;
-    font-weight:400;
-}
-
-.user-mini{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    color:#666;
-    font-size:13px;
-}
-
-.avatar{
-    width:34px;
-    height:34px;
-    border-radius:50%;
-    background:#e9eefc;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:18px;
-}
-
-.container{
-    max-width:1000px;
-    margin:auto;
-    padding:18px 14px 100px;
-}
-
-.nav{
-    display:flex;
-    gap:8px;
-    overflow-x:auto;
-    margin-bottom:18px;
-    padding-bottom:4px;
-}
-
-.nav button{
-    flex:none;
-    border:0;
-    background:white;
-    padding:10px 15px;
-    border-radius:20px;
-    color:#666;
-}
-
-.nav button.active{
-    background:#222;
-    color:white;
-}
-
-.card{
-    background:white;
-    border-radius:16px;
-    padding:18px;
-    margin-bottom:14px;
-    box-shadow:0 2px 12px rgba(0,0,0,.04);
-}
-
-.composer textarea{
-    width:100%;
-    min-height:100px;
-    resize:vertical;
-    border:1px solid #e2e5eb;
-    border-radius:12px;
-    padding:12px;
-    outline:none;
-}
-
-.composer textarea:focus,
-input:focus,
-select:focus{
-    border-color:#777;
-}
-
-.row{
-    display:flex;
-    gap:10px;
-    align-items:center;
-}
-
-.space{
-    justify-content:space-between;
-}
-
-select,
-input{
-    border:1px solid #e2e5eb;
-    background:white;
-    border-radius:10px;
-    padding:9px 11px;
-    outline:none;
-}
-
-.primary{
-    border:0;
-    background:#222;
-    color:white;
-    border-radius:10px;
-    padding:10px 17px;
-}
-
-.secondary{
-    border:1px solid #ddd;
-    background:white;
-    color:#444;
-    border-radius:10px;
-    padding:9px 14px;
-}
-
-.danger{
-    color:#d33;
-}
-
-.search{
-    width:100%;
-    margin-bottom:14px;
-}
-
-.search input{
-    width:100%;
-    padding:12px;
-}
-
-.post{
-    position:relative;
-}
-
-.post-head{
-    display:flex;
-    align-items:center;
-    gap:10px;
-}
-
-.post-info{
-    flex:1;
-}
-
-.nickname{
-    font-weight:700;
-}
-
-.time{
-    color:#999;
-    font-size:12px;
-    margin-top:2px;
-}
-
-.category{
-    display:inline-block;
-    font-size:12px;
-    padding:4px 8px;
-    border-radius:8px;
-    background:#f1f3f7;
-    color:#666;
-}
-
-.post-content{
-    margin:16px 0;
-    white-space:pre-wrap;
-    line-height:1.7;
-    word-break:break-word;
-}
-
-.post-actions{
-    display:flex;
-    gap:6px;
-    border-top:1px solid #f0f0f0;
-    padding-top:10px;
-}
-
-.action{
-    border:0;
-    background:white;
-    color:#666;
-    padding:7px 10px;
-    border-radius:8px;
-}
-
-.action:hover{
-    background:#f5f5f5;
-}
-
-.action.active{
-    color:#111;
-    font-weight:700;
-}
-
-.comments{
-    display:none;
-    margin-top:12px;
-    background:#fafafa;
-    border-radius:12px;
-    padding:12px;
-}
-
-.comment{
-    padding:9px 0;
-    border-bottom:1px solid #eee;
-}
-
-.comment:last-child{
-    border-bottom:0;
-}
-
-.comment-top{
-    display:flex;
-    justify-content:space-between;
-    font-size:13px;
-}
-
-.comment-content{
-    margin-top:4px;
-    line-height:1.5;
-}
-
-.comment-box{
-    display:flex;
-    gap:7px;
-    margin-top:10px;
-}
-
-.comment-box input{
-    flex:1;
-}
-
-.empty{
-    text-align:center;
-    color:#999;
-    padding:45px 10px;
-}
-
-.profile{
-    text-align:center;
-    padding:30px 10px;
-}
-
-.big-avatar{
-    width:72px;
-    height:72px;
-    border-radius:50%;
-    background:#edf1ff;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    margin:auto;
-    font-size:35px;
-}
-
-.profile h2{
-    margin:12px 0 5px;
-}
-
-.profile p{
-    color:#888;
-    font-size:13px;
-}
-
-.profile-buttons{
-    display:flex;
-    justify-content:center;
-    gap:8px;
-    margin-top:15px;
-    flex-wrap:wrap;
-}
-
-.section-title{
-    font-size:18px;
-    font-weight:800;
-    margin:10px 0 14px;
-}
-
-.admin-box{
-    border:1px solid #eee;
-    border-radius:12px;
-    padding:15px;
-    margin-bottom:10px;
-}
-
-.admin-label{
-    font-size:13px;
-    color:#888;
-}
-
-.notice{
-    padding:12px;
-    border-radius:10px;
-    background:#f6f7f9;
-    color:#666;
-    font-size:13px;
-    margin-bottom:14px;
-}
-
-.bottom-nav{
-    position:fixed;
-    bottom:0;
-    left:0;
-    right:0;
-    height:62px;
-    background:white;
-    border-top:1px solid #eee;
-    display:flex;
-    justify-content:center;
-    z-index:30;
-}
-
-.bottom-inner{
-    width:min(100%,700px);
-    display:flex;
-    justify-content:space-around;
-}
-
-.bottom-nav button{
-    border:0;
-    background:white;
-    color:#777;
-    font-size:12px;
-    min-width:65px;
-}
-
-.bottom-nav button span{
-    display:block;
-    font-size:20px;
-    margin-bottom:2px;
-}
-
-.bottom-nav button.active{
-    color:#111;
-    font-weight:700;
-}
-
-.modal{
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.4);
-    z-index:100;
-    align-items:center;
-    justify-content:center;
-    padding:20px;
-}
-
-.modal-box{
-    width:min(100%,420px);
-    background:white;
-    border-radius:16px;
-    padding:20px;
-}
-
-.modal-box h3{
-    margin-top:0;
-}
-
-.modal-box input{
-    width:100%;
-    margin:8px 0 14px;
-}
-
-@media(max-width:600px){
-
-    .header{
-        height:58px;
-    }
-
-    .logo{
-        font-size:18px;
-    }
-
-    .container{
-        padding-top:12px;
-    }
-
-    .card{
-        border-radius:13px;
-        padding:14px;
-    }
-
-    .composer textarea{
-        min-height:90px;
-    }
-
-    .post-actions{
-        overflow-x:auto;
-    }
-
-    .action{
-        white-space:nowrap;
-    }
-
-    .user-mini span{
-        display:none;
-    }
+*{box-sizing:border-box;margin:0;padding:0;font-family:"PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:linear-gradient(180deg,#f8fafc,#eef2f7);color:var(--text);min-height:100vh;line-height:1.6;padding-bottom:env(safe-area-inset-bottom)}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+.hide{display:none!important}
+header{position:fixed;top:0;left:0;width:100%;z-index:100;background:rgba(255,255,255,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(226,232,240,.85)}
+.nav{max-width:1200px;margin:auto;min-height:64px;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{display:flex;align-items:center;gap:9px;font-size:18px;font-weight:800;white-space:nowrap}
+.logo-mark{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#2563eb,#1d4ed8);box-shadow:0 5px 14px rgba(37,99,235,.25)}
+.logo small{font-size:12px;color:var(--muted);font-weight:500}
+.nav-right{display:flex;align-items:center;gap:15px}
+.nav-menu{display:flex;gap:20px}
+.nav-link{border:0;background:none;color:var(--sub);font-size:14px;font-weight:600;padding:7px 2px;position:relative}
+.nav-link.active{color:var(--primary)}
+.nav-link.active:after{content:"";position:absolute;left:0;right:0;bottom:-7px;height:2px;border-radius:2px;background:var(--primary)}
+.user-chip{border:1px solid var(--border);background:#fff;border-radius:22px;padding:5px 11px 5px 5px;display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(15,23,42,.04)}
+.user-chip .av{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:var(--primary-soft);font-size:16px}
+.admin-badge{font-size:10px;color:#fff;background:#d97706;border-radius:9px;padding:2px 6px;margin-left:2px}
+.container{max-width:1200px;margin:84px auto 35px;padding:0 20px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:24px}
+.sidebar{position:sticky;top:84px;height:max-content;background:#fff;border:1px solid rgba(226,232,240,.75);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.sidebar-title{font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.12em;margin:2px 8px 10px}
+.side-item{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:10px;color:var(--sub);font-size:14px;font-weight:600;margin-bottom:3px;border:0;background:none;width:100%;text-align:left}
+.side-item:hover{background:#f8fafc}.side-item.active{background:var(--primary-soft);color:var(--primary)}
+.sidebar-tip{margin-top:14px;padding:12px;border-radius:11px;background:#f8fafc;color:var(--muted);font-size:12px;line-height:1.55}
+.main-box{min-width:0}
+.card{background:var(--card);border:1px solid rgba(226,232,240,.75);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}
+.publish-card{margin-bottom:16px}
+textarea{width:100%;min-height:92px;border:0;outline:0;resize:vertical;background:transparent;color:var(--text);font-size:16px;line-height:1.65}
+textarea::placeholder{color:#a8b2c1}
+.divider{height:1px;background:var(--border);margin:10px 0 12px}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.select,.search-input{border:1px solid var(--border);background:#fff;color:var(--sub);border-radius:10px;outline:0;padding:8px 11px;font-size:13px}
+.select:focus,.search-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.upload{display:inline-flex;align-items:center;gap:5px;padding:8px 12px;border:1px dashed #cbd5e1;background:#f8fafc;color:var(--sub);border-radius:10px;font-size:13px;font-weight:600}
+.upload:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
+.hidden-file{position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0}
+.anon{display:flex;align-items:center;gap:6px;padding:7px 8px;color:var(--sub);font-size:13px}
+.anon input{accent-color:var(--primary)}
+.primary-btn{margin-left:auto;border:0;color:#fff;background:linear-gradient(135deg,#2563eb,#1d4ed8);padding:9px 18px;border-radius:10px;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(37,99,235,.22)}
+.primary-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(37,99,235,.3)}
+.preview-list{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.preview{width:72px;height:72px;border-radius:10px;overflow:hidden;position:relative;border:1px solid var(--border);background:#f1f5f9}
+.preview img{width:100%;height:100%;object-fit:cover}
+.remove-img{position:absolute;right:4px;top:4px;width:21px;height:21px;border:0;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;line-height:1}
+.feed-tools{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.feed-title{font-size:14px;font-weight:800;flex:1}
+.search-wrap{position:relative;flex:1;max-width:270px}
+.search-input{width:100%;padding-left:34px}
+.search-icon{position:absolute;left:11px;top:7px;color:var(--muted);font-size:14px}
+.sort-btn{border:1px solid var(--border);background:#fff;color:var(--sub);padding:8px 10px;border-radius:9px;font-size:12px;font-weight:600}
+.notice{padding:14px 16px;border-radius:13px;background:linear-gradient(135deg,#eff6ff,#f8fbff);border:1px solid #dbeafe;margin-bottom:16px}
+.notice strong{color:var(--primary);font-size:13px}.notice p{font-size:13px;color:var(--sub);margin-top:3px}
+.post-card{margin-bottom:16px;transition:.2s}
+.post-card:hover{box-shadow:0 8px 28px rgba(15,23,42,.09)}
+.post-card.pinned{border-color:#bfdbfe;box-shadow:0 4px 22px rgba(37,99,235,.08)}
+.post-head{display:flex;gap:11px;align-items:center;margin-bottom:11px}
+.avatar{width:43px;height:43px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#e0e7ff,#c7d2fe);font-size:22px;flex-shrink:0}
+.post-user{font-size:15px;font-weight:800;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.post-time{font-size:12px;color:var(--muted)}
+.post-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:9px}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.tag-bagua{background:#fef2f2;color:#dc2626}.tag-love{background:#fdf4ff;color:#c026d3}.tag-news{background:#f0fdf4;color:#16a34a}
+.pin{font-size:11px;font-weight:700;color:#2563eb;background:#eff6ff;border-radius:20px;padding:3px 9px}
+.post-content{font-size:15px;color:var(--sub);line-height:1.75;white-space:pre-wrap;word-break:break-word;margin-bottom:12px}
+.image-grid{display:grid;gap:6px;margin:8px 0 14px}
+.image-grid.c1{grid-template-columns:minmax(0,320px)}.image-grid.c2{grid-template-columns:repeat(2,minmax(0,210px))}.image-grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.image-item{aspect-ratio:1;overflow:hidden;border-radius:11px;background:#f1f5f9;cursor:zoom-in}
+.image-item img{width:100%;height:100%;object-fit:cover;display:block;transition:.3s}.image-item:hover img{transform:scale(1.05)}
+.actions{border-top:1px solid #f1f5f9;padding-top:10px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.action{border:0;background:none;color:var(--sub);padding:7px 10px;border-radius:8px;font-size:13px;font-weight:600}
+.action:hover{background:#f8fafc;color:var(--primary)}.action.like-on{color:var(--danger);background:#fef2f2}.action.fav-on{color:var(--star);background:#fffbeb}
+.action.delete{margin-left:auto;color:var(--muted)}.action.delete:hover{color:var(--danger);background:#fef2f2}
+.comment-area{margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9}
+.comment{display:flex;gap:9px;padding:10px 0;border-bottom:1px solid #f8fafc}
+.comment:last-of-type{border-bottom:0}.comment-avatar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#f1f5f9;flex-shrink:0}
+.comment-body{min-width:0;flex:1}.comment-head{display:flex;align-items:center;gap:6px}.comment-head strong{font-size:13px;color:var(--primary)}.comment-head span{font-size:11px;color:var(--muted)}
+.comment-del{margin-left:auto;border:0;background:none;color:var(--muted);font-size:11px;padding:3px 6px;border-radius:5px}.comment-del:hover{color:var(--danger);background:#fef2f2}
+.comment-text{font-size:13px;color:var(--sub);margin-top:2px;word-break:break-word}
+.comment-img{margin-top:6px;max-width:190px;border-radius:9px;overflow:hidden;cursor:zoom-in}.comment-img img{width:100%;display:block}
+.comment-preview{display:flex;gap:7px;margin:7px 0;flex-wrap:wrap}.comment-preview .preview{width:58px;height:58px}
+.comment-input-row{display:flex;gap:7px;align-items:center;margin-top:10px}
+.comment-photo{width:38px;height:38px;border:1px solid var(--border);background:#fff;border-radius:9px;display:grid;place-items:center;color:var(--sub)}
+.comment-input{flex:1;min-width:0;border:1px solid var(--border);background:#f8fafc;border-radius:9px;padding:9px 12px;outline:0;font-size:13px}
+.comment-input:focus{background:#fff;border-color:var(--primary)}.comment-send{border:0;background:var(--primary);color:#fff;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700}
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}.empty .emoji{font-size:38px;display:block;margin-bottom:10px}
+.my-page{background:#fff;border:1px solid rgba(226,232,240,.75);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+.my-info{display:flex;align-items:center;gap:15px;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:18px;flex-wrap:wrap}
+.my-info .avatar{width:62px;height:62px;font-size:30px}.my-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.mini{border:1px solid var(--border);background:#fff;color:var(--sub);border-radius:9px;padding:8px 12px;font-size:13px;font-weight:600}.mini:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}.mini.admin{background:#d97706;color:#fff;border-color:#d97706}
+.tabs{display:flex;gap:5px;background:#f1f5f9;padding:4px;border-radius:11px;margin-bottom:18px;overflow:auto}.tab{white-space:nowrap;border:0;background:none;color:var(--sub);padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600}.tab.active{background:#fff;color:var(--primary);box-shadow:0 1px 4px rgba(15,23,42,.08)}
+.modal-mask{position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:18px}
+.modal{width:100%;max-width:410px;background:#fff;border-radius:20px;padding:24px;box-shadow:0 24px 60px rgba(15,23,42,.22)}
+.modal h3{font-size:18px;margin-bottom:5px}.tip{font-size:12px;color:var(--muted);margin-bottom:14px}.modal input[type=text],.modal input[type=password]{width:100%;border:1px solid var(--border);background:#f8fafc;border-radius:10px;padding:11px 13px;outline:0;margin-bottom:8px}.modal input:focus{background:#fff;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.status{min-height:18px;color:var(--muted);font-size:12px;margin-bottom:12px}.status.ok{color:var(--ok)}.status.err{color:var(--danger)}
+.avatars{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 18px}.avatar-choice{width:42px;height:42px;border:2px solid transparent;border-radius:50%;background:#f1f5f9;display:grid;place-items:center;font-size:21px}.avatar-choice.selected{border-color:var(--primary);background:var(--primary-soft)}
+.modal-actions{display:flex;gap:8px}.secondary{flex:1;border:1px solid var(--border);background:#fff;color:var(--sub);border-radius:10px;padding:10px;font-size:13px;font-weight:600}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:grid;place-items:center;padding:18px;cursor:zoom-out}.lightbox img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:rgba(15,23,42,.93);color:#fff;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;z-index:10000;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:up .2s}
+@keyframes up{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:25px 20px}
+.mobile-nav{display:none}
+@media(max-width:768px){
+  header{position:fixed}.nav{min-height:58px;padding:8px 13px}.logo{font-size:15px}.logo-mark{width:30px;height:30px}.logo small{display:none}
+  .nav-menu{display:none}.user-chip{font-size:12px;padding-right:8px}.container{display:block;margin:74px auto 75px;padding:0 12px}
+  .sidebar{position:static;padding:8px;margin-bottom:12px;display:flex;gap:5px;overflow-x:auto;box-shadow:none}.sidebar-title,.sidebar-tip{display:none}.side-item{width:auto;flex:0 0 auto;margin:0;padding:8px 11px;font-size:12px;white-space:nowrap}
+  .card{padding:16px;border-radius:14px}.publish-card{padding:15px}.publish-card textarea{min-height:82px}
+  .toolbar{gap:6px}.upload,.select,.anon{font-size:12px}.primary-btn{width:100%;margin-left:0;margin-top:2px;padding:10px}
+  .feed-tools{flex-wrap:wrap}.search-wrap{order:3;flex-basis:100%;max-width:none}.feed-title{font-size:13px}
+  .image-grid.c3{grid-template-columns:repeat(3,1fr)}.image-grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .post-content{font-size:14px}.actions{gap:2px}.action{padding:7px 8px;font-size:12px}
+  .comment-input-row{align-items:stretch}.comment-photo{width:36px}.comment-send{padding:8px 11px}
+  .my-page{padding:16px}.my-info .avatar{width:55px;height:55px;font-size:26px}.my-actions{width:100%;margin-left:0}.my-actions .mini{flex:1}
+  .tabs{margin-left:-2px;margin-right:-2px}.tab{padding:8px 11px}
+  .mobile-nav{position:fixed;display:flex;left:0;right:0;bottom:0;z-index:90;padding:7px 12px calc(7px + env(safe-area-inset-bottom));background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-top:1px solid var(--border);justify-content:space-around}
+  .mobile-nav button{border:0;background:none;color:var(--muted);font-size:11px;font-weight:700;padding:4px 18px}.mobile-nav button.active{color:var(--primary)}
 }
 </style>
 </head>
-
 <body>
 
-<div class="top">
-    <div class="header">
-        <div class="logo">
-            🏫 校园论坛
-            <span>Campus Forum</span>
-        </div>
-
-        <div class="user-mini">
-            <div class="avatar" id="topAvatar">👤</div>
-            <span id="topNickname">正在登录...</span>
-        </div>
+<header>
+  <div class="nav">
+    <div class="logo"><span class="logo-mark">思</span>思茅一中 · 校园论坛 <small>文庙论坛</small></div>
+    <div class="nav-right">
+      <div class="nav-menu">
+        <button class="nav-link active" data-nav="home">首页</button>
+        <button class="nav-link" data-nav="my">我的</button>
+      </div>
+      <button class="user-chip" id="userChip"><span class="av" id="chipAvatar">😀</span><span id="chipNick">同学</span></button>
     </div>
-</div>
+  </div>
+</header>
+
+<input type="file" id="postImageInput" accept="image/*" multiple class="hidden-file">
 
 <div class="container">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-title">板块分类</div>
+    <button class="side-item active" data-cat="all">🔥 全部动态</button>
+    <button class="side-item" data-cat="bagua">🍉 校园八卦</button>
+    <button class="side-item" data-cat="love">💌 表白墙</button>
+    <button class="side-item" data-cat="news">📢 校园新鲜事</button>
+    <div class="sidebar-tip">💡 文庙论坛是校园交流测试版。请友善发言，不发布真实姓名、电话、住址等个人信息。</div>
+  </aside>
 
-    <div class="nav">
-        <button class="active" onclick="showPage('home',this)">🏠 首页</button>
-        <button onclick="showPage('hot',this)">🔥 热门</button>
-        <button onclick="showPage('confession',this)">💌 表白墙</button>
-        <button onclick="showPage('mine',this)">👤 我的</button>
-        <button id="adminNav" onclick="showPage('admin',this)" style="display:none">
-            🛡️ 管理员
-        </button>
-    </div>
-
-    <!-- 首页 -->
+  <main class="main-box">
     <section id="homePage">
+      <div class="notice">
+        <strong>📢 文庙论坛公告</strong>
+        <p>欢迎来到思茅一中校园论坛！帖子、评论、点赞和收藏通过 Supabase 共享，换设备也能继续使用。</p>
+      </div>
 
-        <div class="search">
-            <input
-                id="searchInput"
-                placeholder="🔎 搜索帖子..."
-                oninput="renderCurrentPosts()"
-            >
+      <div class="card publish-card">
+        <textarea id="textVal" maxlength="2000" placeholder="分享你的校园心事、八卦、表白或新鲜事……"></textarea>
+        <div class="divider"></div>
+        <div id="postPreviewList" class="preview-list"></div>
+        <div class="toolbar" style="margin-top:10px">
+          <label class="upload" for="postImageInput">📷 添加图片</label>
+          <select class="select" id="catSelect">
+            <option value="bagua">校园八卦</option>
+            <option value="love">表白墙</option>
+            <option value="news">校园新鲜事</option>
+          </select>
+          <label class="anon"><input type="checkbox" id="anonCheck"> 匿名发布</label>
+          <span id="charCount" style="font-size:11px;color:var(--muted)">0 / 2000</span>
+          <button class="primary-btn" id="publishBtn">发布动态</button>
         </div>
+      </div>
 
-        <div class="card composer">
-
-            <div class="section-title">✏️ 发布内容</div>
-
-            <textarea
-                id="postContent"
-                maxlength="2000"
-                placeholder="分享一下校园里的新鲜事吧..."
-            ></textarea>
-
-            <div class="row space" style="margin-top:10px">
-
-                <select id="postCategory">
-                    <option value="校园">校园</option>
-                    <option value="学习">学习</option>
-                    <option value="生活">生活</option>
-                    <option value="吐槽">吐槽</option>
-                    <option value="求助">求助</option>
-                    <option value="失物招领">失物招领</option>
-                    <option value="表白墙">💌 表白墙</option>
-                </select>
-
-                <button class="primary" onclick="publishPost()">
-                    发布
-                </button>
-
-            </div>
-
-        </div>
-
-        <div id="homePosts"></div>
-
+      <div class="feed-tools">
+        <div class="feed-title" id="feedTitle">全部动态</div>
+        <div class="search-wrap"><span class="search-icon">🔍</span><input class="search-input" id="searchInput" placeholder="搜索帖子内容或昵称…"></div>
+        <button class="sort-btn" id="sortBtn">最新优先 ↕</button>
+      </div>
+      <div id="postList"></div>
     </section>
 
-
-    <!-- 热门 -->
-    <section id="hotPage" style="display:none">
-
-        <div class="section-title">🔥 热门帖子</div>
-
-        <div id="hotPosts"></div>
-
-    </section>
-
-
-    <!-- 表白墙 -->
-    <section id="confessionPage" style="display:none">
-
-        <div class="card">
-            <div class="section-title">💌 表白墙</div>
-
-            <div class="notice">
-                在这里发布你的校园表白、祝福或者想说的话。
-                可以选择匿名发布。
-            </div>
-
-            <textarea
-                id="confessionContent"
-                maxlength="2000"
-                style="width:100%;min-height:110px;border:1px solid #ddd;border-radius:12px;padding:12px"
-                placeholder="想对 TA 说些什么？"
-            ></textarea>
-
-            <button
-                class="primary"
-                style="margin-top:10px"
-                onclick="publishConfession()"
-            >
-                💌 发布表白
-            </button>
+    <section id="myPage" class="hide">
+      <div class="my-page">
+        <div class="my-info">
+          <div class="avatar" id="myAvatar">😀</div>
+          <div><div style="font-size:19px;font-weight:800" id="myNick">同学</div><div style="font-size:12px;color:var(--muted)" id="myRole">思茅一中 · 在校学生</div></div>
+          <div class="my-actions">
+            <button class="mini" id="editProfileBtn">修改资料</button>
+            <button class="mini" id="adminEntryBtn">🔐 管理员</button><button class="mini" id="aboutBtn">🏫 关于我们</button>
+          </div>
         </div>
-
-        <div id="confessionPosts"></div>
-
-    </section>
-
-
-    <!-- 我的 -->
-    <section id="minePage" style="display:none">
-
-        <div class="card profile">
-
-            <div class="big-avatar" id="profileAvatar">
-                👤
-            </div>
-
-            <h2 id="profileNickname">
-                匿名用户
-            </h2>
-
-            <p id="profileId"></p>
-
-            <div class="profile-buttons">
-
-                <button
-                    class="secondary"
-                    onclick="openNicknameModal()"
-                >
-                    ✏️ 修改昵称
-                </button>
-
-                <button
-                    class="secondary"
-                    onclick="showMyPosts()"
-                >
-                    📝 我的帖子
-                </button>
-
-                <button
-                    class="secondary"
-                    onclick="showMyFavorites()"
-                >
-                    ⭐ 我的收藏
-                </button>
-
-            </div>
-
+        <div class="tabs">
+          <button class="tab active" data-tab="posts">我的帖子</button>
+          <button class="tab" data-tab="comments">我的评论</button>
+          <button class="tab" data-tab="likes">❤️ 我的点赞</button>
+          <button class="tab" data-tab="favorites">⭐ 我的收藏</button>
         </div>
-
-        <div id="mineContent"></div>
-
+        <div id="myContentList"></div>
+      </div>
     </section>
-
-
-    <!-- 管理员 -->
-    <section id="adminPage" style="display:none">
-
-        <div class="card">
-
-            <div class="section-title">
-                🛡️ 管理员中心
-            </div>
-
-            <div class="notice">
-                只有 profiles 表中的 is-admin 为 true 的账号才能看到这里。
-            </div>
-
-            <div class="admin-box">
-                <div class="admin-label">当前账号</div>
-                <div id="adminNickname"></div>
-            </div>
-
-            <div class="admin-box">
-                <div class="admin-label">帖子数量</div>
-                <div id="adminPostCount">加载中...</div>
-            </div>
-
-            <div class="admin-box">
-                <div class="admin-label">评论数量</div>
-                <div id="adminCommentCount">加载中...</div>
-            </div>
-
-        </div>
-
-        <div class="section-title">
-            📋 最近帖子
-        </div>
-
-        <div id="adminPosts"></div>
-
-    </section>
-
+  </main>
 </div>
 
+<nav class="mobile-nav">
+  <button data-nav="home" class="active">🏠<br>首页</button>
+  <button id="mobileUserBtn">👤<br>资料</button>
+  <button data-nav="my">📋<br>我的</button>
+</nav>
 
-<!-- 底部导航 -->
-<div class="bottom-nav">
+<footer>文庙论坛 · 云南省思茅一中校园社区<br><span style="letter-spacing:2px">求真 · 共学 · 同行</span></footer>
 
-    <div class="bottom-inner">
-
-        <button class="active" onclick="showPage('home',this)">
-            <span>🏠</span>
-            首页
-        </button>
-
-        <button onclick="showPage('hot',this)">
-            <span>🔥</span>
-            热门
-        </button>
-
-        <button onclick="showPage('confession',this)">
-            <span>💌</span>
-            表白
-        </button>
-
-        <button onclick="showPage('mine',this)">
-            <span>👤</span>
-            我的
-        </button>
-
+<div class="modal-mask hide" id="userModal">
+  <div class="modal">
+    <h3>修改昵称与头像</h3>
+    <div class="tip">昵称仅保存在当前浏览器中。静态测试版不会上传到服务器。</div>
+    <input type="text" id="nickInput" maxlength="20" autocomplete="off" placeholder="输入昵称">
+    <div class="status" id="nickStatus">请输入昵称</div>
+    <div class="avatars" id="avatarSelect">
+      <button class="avatar-choice" data-avatar="😀">😀</button><button class="avatar-choice" data-avatar="😎">😎</button>
+      <button class="avatar-choice" data-avatar="🥳">🥳</button><button class="avatar-choice" data-avatar="🤓">🤓</button>
+      <button class="avatar-choice" data-avatar="😜">😜</button><button class="avatar-choice" data-avatar="🤗">🤗</button>
+      <button class="avatar-choice" data-avatar="😏">😏</button><button class="avatar-choice" data-avatar="🥰">🥰</button>
+      <button class="avatar-choice" data-avatar="🤠">🤠</button>
     </div>
-
+    <div class="modal-actions"><button class="secondary" id="cancelUser">关闭</button><button class="primary-btn" style="margin:0;flex:1" id="saveUserBtn">保存</button></div>
+  </div>
 </div>
 
-
-<!-- 修改昵称 -->
-<div class="modal" id="nicknameModal">
-
-    <div class="modal-box">
-
-        <h3>修改昵称</h3>
-
-        <input
-            id="nicknameInput"
-            maxlength="20"
-            placeholder="请输入昵称"
-        >
-
-        <div class="row" style="justify-content:flex-end">
-
-            <button
-                class="secondary"
-                onclick="closeNicknameModal()"
-            >
-                取消
-            </button>
-
-            <button
-                class="primary"
-                onclick="saveNickname()"
-            >
-                保存
-            </button>
-
-        </div>
-
-    </div>
-
+<div class="modal-mask hide" id="adminModal">
+  <div class="modal">
+    <h3>👑 管理员</h3>
+    <div class="tip" id="adminTip">管理员身份由 Supabase 服务器权限控制，不在网页中保存管理员密码。</div>
+    <div class="status" id="adminStatus">正在读取管理员状态……</div>
+    <div class="modal-actions"><button class="secondary" id="cancelAdmin">关闭</button></div>
+  </div>
 </div>
 
+<div class="lightbox hide" id="lightbox"><img id="lightboxImg" alt=""></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL='https://pjfwkylyeiaymwajtztt.supabase.co';
+const SUPABASE_KEY='sb_publishable_WfdLfZvV9z4eccE30RL0Ww_3Bkjmsl4';
+const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-/* ==============================
-   Supabase
-============================== */
+let currentUser=null,currentProfile=null,allProfiles=[];
+let posts=[],comments=[],likes=[],favorites=[];
+let currentCategory='all',myTab='posts',sortMode='new',searchText='';
+let pendingPostImages=[],pendingCommentImages={};
 
-const SUPABASE_URL =
-"https://pjfwkylyeiaymwajtztt.supabase.co";
-
-const SUPABASE_KEY =
-"sb_publishable_WfdLfZvV9z4eccE30RL0Ww_3Bkjmsl4";
-
-const client =
-window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-);
-
-
-/* ==============================
-   全局变量
-============================== */
-
-let currentUser = null;
-let currentProfile = null;
-let allPosts = [];
-let allComments = [];
-let allLikes = [];
-let allFavorites = [];
-
-let currentPage = "home";
-
-
-/* ==============================
-   初始化
-============================== */
+const $=id=>document.getElementById(id);
+const toast=msg=>{const e=document.createElement('div');e.className='toast';e.textContent=msg;document.body.appendChild(e);setTimeout(()=>e.remove(),2100)};
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function fmtTime(ts){const d=new Date(ts),now=new Date(),sec=Math.max(0,Math.floor((now-d)/1000));if(sec<30)return '刚刚';if(sec<60)return sec+'秒前';if(sec<3600)return Math.floor(sec/60)+'分钟前';if(sec<86400)return Math.floor(sec/3600)+'小时前';if(sec<2592000)return Math.floor(sec/86400)+'天前';return d.toLocaleString('zh-CN',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
+function catInfo(cat){
+  const map={bagua:{name:'校园八卦',cls:'tag-bagua'},love:{name:'表白墙',cls:'tag-love'},news:{name:'校园新鲜事',cls:'tag-news'},校园:{name:'校园',cls:'tag-news'},学习:{name:'学习',cls:'tag-news'},生活:{name:'生活',cls:'tag-news'},吐槽:{name:'吐槽',cls:'tag-bagua'},求助:{name:'求助',cls:'tag-news'},'失物招领':{name:'失物招领',cls:'tag-news'}};
+  return map[cat]||map.news;
+}
+function avatarFor(id){return allProfiles.find(p=>p.id===id)?.avatar||'😀'}
+function profileFor(id){return allProfiles.find(p=>p.id===id)||null}
+function displayName(id,anonymous=false){if(anonymous)return '匿名同学';return profileFor(id)?.nickname||'同学';}
+function adminFlag(id){return !!profileFor(id)?.is_admin}
+function relativeRefresh(){renderPosts();renderMyPage();}
 
 async function init(){
-
-    try{
-
-        let {
-            data:{
-                session
-            }
-        } = await client.auth.getSession();
-
-        if(!session){
-
-            const result =
-                await client.auth.signInAnonymously();
-
-            if(result.error){
-                throw result.error;
-            }
-
-            session = result.data.session;
-        }
-
-        currentUser =
-            session.user;
-
-        await createOrLoadProfile();
-
-        updateUserUI();
-
-        await loadAllData();
-
-    }catch(error){
-
-        console.error(error);
-
-        alert(
-            "登录失败：\n" +
-            (error.message || error)
-        );
-
-    }
-
+  try{
+    let {data:{session}}=await client.auth.getSession();
+    if(!session){const r=await client.auth.signInAnonymously();if(r.error)throw r.error;session=r.data.session;}
+    currentUser=session.user;
+    await createOrLoadProfile();
+    await loadAllData();
+    bindEvents();
+    updateUserUI();
+    renderPosts();
+    renderMyPage();
+    setInterval(relativeRefresh,30000);
+  }catch(e){console.error(e);toast('连接论坛失败，请检查 Supabase 配置');}
 }
-
-
-/* ==============================
-   创建/读取个人资料
-============================== */
 
 async function createOrLoadProfile(){
-
-    let {
-        data,
-        error
-    } = await client
-        .from("profiles")
-        .select("*")
-        .eq("id",currentUser.id)
-        .maybeSingle();
-
-    if(error){
-        console.error(error);
-        return;
-    }
-
-    if(!data){
-
-        const {
-            data:newProfile,
-            error:insertError
-        } = await client
-            .from("profiles")
-            .insert({
-
-                id:currentUser.id,
-
-                nickname:"匿名用户",
-
-                avatar:"",
-
-                "is-admin":false
-
-            })
-            .select()
-            .single();
-
-        if(insertError){
-
-            console.error(
-                "创建 profile 失败:",
-                insertError
-            );
-
-            return;
-        }
-
-        currentProfile =
-            newProfile;
-
-    }else{
-
-        currentProfile =
-            data;
-
-    }
-
+  const {data,error}=await client.from('profiles').select('*').eq('id',currentUser.id).maybeSingle();
+  if(error){console.error(error);throw error;}
+  currentProfile=data;
+  if(!currentProfile) throw new Error('profile 不存在，请确认 handle_new_user trigger 已启用');
 }
-
-
-/* ==============================
-   用户界面
-============================== */
+async function loadAllData(){await Promise.all([loadProfiles(),loadPosts(),loadComments(),loadLikes(),loadFavorites()]);}
+async function loadProfiles(){const {data,error}=await client.from('profiles').select('id,nickname,avatar,is_admin');if(error)throw error;allProfiles=data||[];currentProfile=allProfiles.find(p=>p.id===currentUser.id)||currentProfile;}
+async function loadPosts(){const {data,error}=await client.from('posts').select('*').order('created_at',{ascending:false});if(error)throw error;posts=data||[];}
+async function loadComments(){const {data,error}=await client.from('comments').select('*').order('created_at',{ascending:true});if(error)throw error;comments=data||[];}
+async function loadLikes(){const {data,error}=await client.from('post_likes').select('post_id,user_id,created_at');if(error)throw error;likes=data||[];}
+async function loadFavorites(){const {data,error}=await client.from('post_favorites').select('post_id,user_id,created_at');if(error)throw error;favorites=data||[];}
 
 function updateUserUI(){
-
-    if(!currentProfile)
-        return;
-
-    const nickname =
-        currentProfile.nickname ||
-        "匿名用户";
-
-    document.getElementById(
-        "topNickname"
-    ).textContent = nickname;
-
-    document.getElementById(
-        "profileNickname"
-    ).textContent = nickname;
-
-    document.getElementById(
-        "profileId"
-    ).textContent =
-        "用户 ID：" +
-        currentUser.id.substring(0,8) +
-        "...";
-
-    document.getElementById(
-        "adminNickname"
-    ).textContent = nickname;
-
-    if(currentProfile["is-admin"]){
-
-        document.getElementById(
-            "adminNav"
-        ).style.display="block";
-
-    }
-
+  const av=currentProfile?.avatar||'😀',nick=currentProfile?.nickname||'同学';
+  $('chipAvatar').textContent=av;$('chipNick').textContent=nick;$('myAvatar').textContent=av;$('myNick').textContent=nick;
+  $('myRole').innerHTML=currentProfile?.is_admin?'思茅一中 · <b style="color:#d97706">管理员</b>':'思茅一中 · 在校学生';
+  $('adminEntryBtn').textContent=currentProfile?.is_admin?'👑 管理员':'🔐 管理员';
+  $('adminEntryBtn').classList.toggle('admin',!!currentProfile?.is_admin);
 }
 
-
-/* ==============================
-   加载全部数据
-============================== */
-
-async function loadAllData(){
-
-    await Promise.all([
-
-        loadPosts(),
-
-        loadComments(),
-
-        loadLikes(),
-
-        loadFavorites()
-
-    ]);
-
-    renderCurrentPosts();
-
-    renderHotPosts();
-
-    renderConfessions();
-
-    loadAdminData();
-
+function bindEvents(){
+  document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>switchPage(b.dataset.nav));
+  document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{currentCategory=b.dataset.cat;document.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('active',x.dataset.cat===currentCategory));switchPage('home');renderPosts();});
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{myTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderMyPage();});
+  $('userChip').onclick=openUser;$('mobileUserBtn').onclick=openUser;$('editProfileBtn').onclick=openUser;$('saveUserBtn').onclick=saveProfile;$('cancelUser').onclick=closeUser;
+  document.querySelectorAll('.avatar-choice').forEach(b=>b.onclick=()=>{document.querySelectorAll('.avatar-choice').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')});
+  $('aboutBtn').onclick=()=>$('aboutModal').classList.remove('hide');$('closeAbout').onclick=()=>$('aboutModal').classList.add('hide');
+  $('adminEntryBtn').onclick=openAdmin;$('cancelAdmin').onclick=closeAdmin;
+  $('publishBtn').onclick=publishPost;$('postImageInput').onchange=handlePostImages;$('textVal').oninput=()=>$('charCount').textContent=$('textVal').value.length+' / 2000';
+  $('searchInput').oninput=e=>{searchText=e.target.value.trim().toLowerCase();renderPosts()};
+  $('sortBtn').onclick=()=>{sortMode=sortMode==='new'?'hot':'new';$('sortBtn').textContent=sortMode==='new'?'最新优先 ↕':'最热优先 ↕';renderPosts()};
+  $('lightbox').onclick=()=>$('lightbox').classList.add('hide');
 }
 
-
-/* ==============================
-   加载帖子
-============================== */
-
-async function loadPosts(){
-
-    const {
-        data,
-        error
-    } = await client
-        .from("posts")
-        .select("*")
-        .order("id",{ascending:false});
-
-    if(error){
-
-        console.error(
-            "posts:",
-            error
-        );
-
-        return;
-    }
-
-    allPosts =
-        data || [];
-
+function openUser(){if(!currentProfile)return;$('nickInput').value=currentProfile.nickname||'';$('nickStatus').textContent='当前昵称：'+(currentProfile.nickname||'');document.querySelectorAll('.avatar-choice').forEach(b=>b.classList.toggle('selected',b.dataset.avatar===currentProfile.avatar));$('userModal').classList.remove('hide');}
+function closeUser(){$('userModal').classList.add('hide')}
+async function saveProfile(){
+  const n=$('nickInput').value.trim();if(!n){$('nickStatus').textContent='⚠️ 昵称不能为空';$('nickStatus').className='status err';return}
+  const a=document.querySelector('.avatar-choice.selected')?.dataset.avatar||currentProfile.avatar;
+  const {data,error}=await client.from('profiles').update({nickname:n,avatar:a}).eq('id',currentUser.id).select('*').single();
+  if(error){$('nickStatus').textContent='保存失败：'+error.message;$('nickStatus').className='status err';return;}
+  currentProfile=data;const i=allProfiles.findIndex(x=>x.id===data.id);if(i>=0)allProfiles[i]=data;else allProfiles.push(data);updateUserUI();renderPosts();renderMyPage();closeUser();toast('资料已保存');
 }
-
-
-/* ==============================
-   评论
-============================== */
-
-async function loadComments(){
-
-    const {
-        data,
-        error
-    } = await client
-        .from("comments")
-        .select("*")
-        .order("id",{ascending:true});
-
-    if(error){
-
-        console.error(
-            "comments:",
-            error
-        );
-
-        return;
-    }
-
-    allComments =
-        data || [];
-
+function openAdmin(){
+  $('adminModal').classList.remove('hide');
+  if(currentProfile?.is_admin){$('adminStatus').textContent='✅ 当前账号已具备管理员权限，可以删除全站帖子和评论。';$('adminStatus').className='status ok';$('adminTip').textContent='管理员权限由数据库控制。';}
+  else{$('adminStatus').textContent='当前账号不是管理员。';$('adminStatus').className='status';$('adminTip').textContent='管理员身份由 Supabase 数据库字段 is_admin 控制，不在网页中保存管理员密码。';}
 }
+function closeAdmin(){$('adminModal').classList.add('hide')}
 
-
-/* ==============================
-   点赞
-============================== */
-
-async function loadLikes(){
-
-    const {
-        data,
-        error
-    } = await client
-        .from("post_likes")
-        .select("*");
-
-    if(error){
-
-        console.error(
-            "likes:",
-            error
-        );
-
-        return;
-    }
-
-    allLikes =
-        data || [];
-
-}
-
-
-/* ==============================
-   收藏
-============================== */
-
-async function loadFavorites(){
-
-    const {
-        data,
-        error
-    } = await client
-        .from("post_favorites")
-        .select("*");
-
-    if(error){
-
-        console.error(
-            "favorites:",
-            error
-        );
-
-        return;
-    }
-
-    allFavorites =
-        data || [];
-
-}
-
-
-/* ==============================
-   页面切换
-============================== */
-
-function showPage(page,button){
-
-    currentPage =
-        page;
-
-    const pages = [
-        "home",
-        "hot",
-        "confession",
-        "mine",
-        "admin"
-    ];
-
-    pages.forEach(p=>{
-
-        const el =
-            document.getElementById(
-                p+"Page"
-            );
-
-        if(el){
-            el.style.display =
-                p===page
-                ? "block"
-                : "none";
-        }
-
-    });
-
-    document.querySelectorAll(
-        ".nav button"
-    ).forEach(b=>{
-        b.classList.remove("active");
-    });
-
-    document.querySelectorAll(
-        ".bottom-nav button"
-    ).forEach(b=>{
-        b.classList.remove("active");
-    });
-
-    if(button){
-        button.classList.add("active");
-    }
-
-    if(page==="home")
-        renderCurrentPosts();
-
-    if(page==="hot")
-        renderHotPosts();
-
-    if(page==="confession")
-        renderConfessions();
-
-    if(page==="mine")
-        showMyPosts();
-
-    if(page==="admin")
-        loadAdminData();
-
-}
-
-
-/* ==============================
-   发布普通帖子
-============================== */
+async function compressImage(file,max=1000,quality=.72){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;if(Math.max(w,h)>max){const k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',quality))};img.onerror=reject;img.src=r.result};r.onerror=reject;r.readAsDataURL(file)})}
+async function handlePostImages(e){let added=0;for(const f of e.target.files){if(pendingPostImages.length>=9){toast('一条帖子最多 9 张图片');break}try{pendingPostImages.push(await compressImage(f));added++}catch{}}e.target.value='';renderPostPreview();if(added)toast('已添加 '+added+' 张图片')}
+function renderPostPreview(){$('postPreviewList').innerHTML=pendingPostImages.map((s,i)=>`<div class="preview"><img src="${s}"><button class="remove-img" data-i="${i}">×</button></div>`).join('');$('postPreviewList').querySelectorAll('.remove-img').forEach(b=>b.onclick=()=>{pendingPostImages.splice(+b.dataset.i,1);renderPostPreview()})}
 
 async function publishPost(){
-
-    const content =
-        document
-        .getElementById(
-            "postContent"
-        )
-        .value
-        .trim();
-
-    const category =
-        document
-        .getElementById(
-            "postCategory"
-        )
-        .value;
-
-    if(!content){
-
-        alert("请输入内容");
-
-        return;
-    }
-
-    const {
-        error
-    } = await client
-        .from("posts")
-        .insert({
-
-            author_id:
-                currentUser.id,
-
-            category:
-                category,
-
-            content:
-                content
-
-        });
-
-    if(error){
-
-        console.error(error);
-
-        alert(
-            "发布失败：\n" +
-            error.message
-        );
-
-        return;
-    }
-
-    document.getElementById(
-        "postContent"
-    ).value="";
-
-    await loadAllData();
-
-    alert("发布成功！");
-
+  const content=$('textVal').value.trim(),category=$('catSelect').value,anonymous=$('anonCheck').checked;
+  if(!content){toast('请输入文字内容');return}
+  $('publishBtn').disabled=true;
+  try{
+    const {error}=await client.from('posts').insert({author_id:currentUser.id,category,content:content||'',images:pendingPostImages,anonymous});
+    if(error)throw error;
+    $('textVal').value='';$('charCount').textContent='0 / 2000';$('anonCheck').checked=false;pendingPostImages=[];renderPostPreview();await loadAllData();renderPosts();toast('发布成功');
+  }catch(e){console.error(e);toast('发布失败：'+e.message)}finally{$('publishBtn').disabled=false}
 }
 
+function postStats(id){const pLikes=likes.filter(x=>x.post_id===id).length,pFav=favorites.filter(x=>x.post_id===id).length,pCom=comments.filter(x=>x.post_id===id).length;return {likes:pLikes,favorites:pFav,comments:pCom,score:pLikes+pFav+pCom};}
+function isLiked(id){return likes.some(x=>x.post_id===id&&x.user_id===currentUser.id)}
+function isFav(id){return favorites.some(x=>x.post_id===id&&x.user_id===currentUser.id)}
+function canDeletePost(p){return p.author_id===currentUser.id||!!currentProfile?.is_admin}
+function canDeleteComment(c){return c.author_id===currentUser.id||!!currentProfile?.is_admin}
 
-/* ==============================
-   发布表白
-============================== */
-
-async function publishConfession(){
-
-    const content =
-        document
-        .getElementById(
-            "confessionContent"
-        )
-        .value
-        .trim();
-
-    if(!content){
-
-        alert("请输入表白内容");
-
-        return;
-    }
-
-    const {
-        error
-    } = await client
-        .from("posts")
-        .insert({
-
-            author_id:
-                currentUser.id,
-
-            category:
-                "表白墙",
-
-            content:
-                content
-
-        });
-
-    if(error){
-
-        alert(
-            "发布失败：\n"+
-            error.message
-        );
-
-        return;
-    }
-
-    document.getElementById(
-        "confessionContent"
-    ).value="";
-
-    await loadAllData();
-
-    alert("表白发布成功 💌");
-
+function filteredPosts(){
+  let arr=posts.filter(p=>currentCategory==='all'||p.category===currentCategory);
+  if(searchText)arr=arr.filter(p=>(p.content||'').toLowerCase().includes(searchText)||displayName(p.author_id).toLowerCase().includes(searchText));
+  arr.sort((a,b)=>sortMode==='new'?new Date(b.created_at)-new Date(a.created_at):postStats(b.id).score-postStats(a.id).score||new Date(b.created_at)-new Date(a.created_at));
+  return arr;
 }
-
-
-/* ==============================
-   帖子 HTML
-============================== */
-
-function postHTML(post){
-
-    const profile =
-        getProfileForPost(post);
-
-    const nickname =
-        profile
-        ? profile.nickname
-        : (
-            post.author_id === currentUser.id
-            ? currentProfile.nickname
-            : "匿名用户"
-        );
-
-    const likeCount =
-        allLikes.filter(
-            x =>
-            x.post_id === post.id
-        ).length;
-
-    const favoriteCount =
-        allFavorites.filter(
-            x =>
-            x.post_id === post.id
-        ).length;
-
-    const liked =
-        allLikes.some(
-            x =>
-            x.post_id === post.id &&
-            x.user_id === currentUser.id
-        );
-
-    const favorited =
-        allFavorites.some(
-            x =>
-            x.post_id === post.id &&
-            x.user_id === currentUser.id
-        );
-
-    const comments =
-        allComments.filter(
-            x =>
-            x.post_id === post.id
-        );
-
-    const canDelete =
-        post.author_id === currentUser.id ||
-        currentProfile?.["is-admin"];
-
-    return `
-
-    <div class="card post" id="post-${post.id}">
-
-        <div class="post-head">
-
-            <div class="avatar">
-                👤
-            </div>
-
-            <div class="post-info">
-
-                <div class="nickname">
-                    ${escapeHTML(nickname)}
-                </div>
-
-                <div class="time">
-                    ${escapeHTML(post.category || "校园")}
-                </div>
-
-            </div>
-
-            <div class="category">
-                ${escapeHTML(post.category || "校园")}
-            </div>
-
-        </div>
-
-        <div class="post-content">
-            ${escapeHTML(post.content)}
-        </div>
-
-        <div class="post-actions">
-
-            <button
-                class="action ${liked ? "active":""}"
-                onclick="toggleLike('${post.id}')"
-            >
-                ${liked ? "❤️":"🤍"}
-                ${likeCount}
-            </button>
-
-            <button
-                class="action ${favorited ? "active":""}"
-                onclick="toggleFavorite('${post.id}')"
-            >
-                ${favorited ? "⭐":"☆"}
-                ${favoriteCount}
-            </button>
-
-            <button
-                class="action"
-                onclick="toggleComments('${post.id}')"
-            >
-                💬 ${comments.length}
-            </button>
-
-            ${
-                canDelete
-                ?
-                `
-                <button
-                    class="action danger"
-                    onclick="deletePost('${post.id}')"
-                >
-                    🗑️
-                </button>
-                `
-                :""
-            }
-
-        </div>
-
-        <div
-            class="comments"
-            id="comments-${post.id}"
-        >
-
-            <div id="comment-list-${post.id}">
-                ${commentsHTML(comments)}
-            </div>
-
-            <div class="comment-box">
-
-                <input
-                    id="comment-input-${post.id}"
-                    placeholder="说点什么..."
-                    maxlength="500"
-                >
-
-                <button
-                    class="primary"
-                    onclick="addComment('${post.id}')"
-                >
-                    发送
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    `;
-
+function renderPosts(){
+  const names={all:'全部动态',bagua:'校园八卦',love:'表白墙',news:'校园新鲜事',校园:'校园',学习:'学习',生活:'生活',吐槽:'吐槽',求助:'求助','失物招领':'失物招领'};$('feedTitle').textContent=names[currentCategory]||'全部动态';
+  const arr=filteredPosts();$('postList').innerHTML=arr.length?arr.map(postHtml).join(''):'<div class="empty"><span class="emoji">📝</span>这里还没有动态</div>';bindFeed();
 }
-
-
-/* ==============================
-   获取帖子作者
-============================== */
-
-function getProfileForPost(post){
-
-    if(
-        post.author_id ===
-        currentUser.id
-    ){
-        return currentProfile;
-    }
-
-    return null;
-
+function imageGrid(images){if(!images?.length)return '';return `<div class="image-grid c${Math.min(images.length,3)}">${images.map((s,i)=>`<div class="image-item" data-lightbox="${esc(s)}"><img src="${s}" alt="图片 ${i+1}"></div>`).join('')}</div>`}
+function postHtml(p){
+  const st=postStats(p.id),liked=isLiked(p.id),fav=isFav(p.id),me=p.author_id===currentUser.id,prof=profileFor(p.author_id),name=displayName(p.author_id,p.anonymous),av=prof?.avatar||'😀',admin=!!p.is_admin;
+  const cs=comments.filter(c=>c.post_id===p.id);
+  return `<article class="card post-card ${p.is_admin?'pinned':''}"><div class="post-head"><div class="avatar">${esc(av)}</div><div style="min-width:0;flex:1"><div class="post-user">${esc(name)} ${admin?'<span class="admin-badge">管理员</span>':''}</div><div class="post-time">${fmtTime(p.created_at)}</div></div></div><div class="post-meta"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${p.is_admin?'<span class="pin">👑 管理员发布</span>':''}</div><div class="post-content">${esc(p.content)}</div>${imageGrid(p.images)}<div class="actions"><button class="action ${liked?'like-on':''}" data-act="like" data-id="${p.id}">${liked?'❤️':'♡'} 点赞 ${st.likes}</button><button class="action ${fav?'fav-on':''}" data-act="fav" data-id="${p.id}">${fav?'⭐':'☆'} 收藏 ${st.favorites}</button><button class="action" data-act="comment" data-id="${p.id}">💬 评论 ${st.comments}</button>${(me||currentProfile?.is_admin)?`<button class="action delete" data-act="delete" data-id="${p.id}">🗑️ 删除</button>`:''}</div><div class="comment-area">${cs.map(commentHtml).join('')}<div class="comment-preview" id="cp-${p.id}"></div><div class="comment-input-row"><button class="comment-photo" data-act="photo" data-id="${p.id}">📷</button><input type="file" accept="image/*" multiple class="hidden-file cinput-file" data-id="${p.id}"><input class="comment-input" id="ci-${p.id}" maxlength="2000" placeholder="写下你的评论…"><button class="comment-send" data-act="sendcomment" data-id="${p.id}">发送</button></div></div></article>`;
 }
+function commentHtml(c){const prof=profileFor(c.author_id),name=displayName(c.author_id),av=prof?.avatar||'😀';return `<div class="comment"><div class="comment-avatar">${esc(av)}</div><div class="comment-body"><div class="comment-head"><strong>${esc(name)}</strong>${c.is_admin?'<span class="admin-badge">管理员</span>':''}<span>${fmtTime(c.created_at)}</span>${canDeleteComment(c)?`<button class="comment-del" data-act="delcomment" data-cid="${c.id}">删除</button>`:''}</div><div class="comment-text">${esc(c.content)}</div>${(c.images||[]).map(s=>`<div class="comment-img" data-lightbox="${esc(s)}"><img src="${s}" alt="评论图片"></div>`).join('')}</div></div>`}
 
-
-/* ==============================
-   评论 HTML
-============================== */
-
-function commentsHTML(comments){
-
-    if(!comments.length){
-
-        return `
-            <div style="color:#999;font-size:13px">
-                暂无评论
-            </div>
-        `;
-
-    }
-
-    return comments.map(c=>{
-
-        const canDelete =
-            c.author_id === currentUser.id ||
-            currentProfile?.["is-admin"];
-
-        return `
-
-        <div class="comment">
-
-            <div class="comment-top">
-
-                <b>
-                    ${c.author_id===currentUser.id
-                    ? escapeHTML(currentProfile.nickname)
-                    : "匿名用户"}
-                </b>
-
-                ${
-                    canDelete
-                    ?
-                    `
-                    <button
-                        class="action danger"
-                        onclick="deleteComment('${c.id}')"
-                    >
-                        删除
-                    </button>
-                    `
-                    :""
-                }
-
-            </div>
-
-            <div class="comment-content">
-                ${escapeHTML(c.content)}
-            </div>
-
-        </div>
-
-        `;
-
-    }).join("");
-
+function bindFeed(){
+  document.querySelectorAll('[data-lightbox]').forEach(e=>e.onclick=()=>openLightbox(e.dataset.lightbox));
+  document.querySelectorAll('[data-act="like"]').forEach(b=>b.onclick=()=>toggleLike(b.dataset.id));
+  document.querySelectorAll('[data-act="fav"]').forEach(b=>b.onclick=()=>toggleFav(b.dataset.id));
+  document.querySelectorAll('[data-act="delete"]').forEach(b=>b.onclick=()=>deletePost(b.dataset.id));
+  document.querySelectorAll('[data-act="sendcomment"]').forEach(b=>b.onclick=()=>sendComment(b.dataset.id));
+  document.querySelectorAll('[data-act="photo"]').forEach(b=>b.onclick=()=>document.querySelector(`.cinput-file[data-id="${b.dataset.id}"]`).click());
+  document.querySelectorAll('.cinput-file').forEach(inp=>inp.onchange=async function(){const id=this.dataset.id;pendingCommentImages[id]=pendingCommentImages[id]||[];for(const f of this.files){if(pendingCommentImages[id].length>=3)break;try{pendingCommentImages[id].push(await compressImage(f,800,.72))}catch{}}this.value='';renderCommentPreview(id)});
+  document.querySelectorAll('[data-act="delcomment"]').forEach(b=>b.onclick=()=>deleteComment(b.dataset.cid));
 }
+function renderCommentPreview(id){const e=$('cp-'+id);if(!e)return;const a=pendingCommentImages[id]||[];e.innerHTML=a.map((s,i)=>`<div class="preview"><img src="${s}"><button class="remove-img" data-i="${i}">×</button></div>`).join('');e.querySelectorAll('.remove-img').forEach(b=>b.onclick=()=>{a.splice(+b.dataset.i,1);renderCommentPreview(id)})}
 
+async function toggleLike(id){const exists=likes.find(x=>x.post_id===id&&x.user_id===currentUser.id);try{if(exists){const {error}=await client.from('post_likes').delete().eq('post_id',id).eq('user_id',currentUser.id);if(error)throw error}else{const {error}=await client.from('post_likes').insert({post_id:id,user_id:currentUser.id});if(error)throw error}await loadLikes();renderPosts();renderMyPage()}catch(e){toast('点赞操作失败：'+e.message)}}
+async function toggleFav(id){const exists=favorites.find(x=>x.post_id===id&&x.user_id===currentUser.id);try{if(exists){const {error}=await client.from('post_favorites').delete().eq('post_id',id).eq('user_id',currentUser.id);if(error)throw error}else{const {error}=await client.from('post_favorites').insert({post_id:id,user_id:currentUser.id});if(error)throw error}await loadFavorites();renderPosts();renderMyPage()}catch(e){toast('收藏操作失败：'+e.message)}}
+async function deletePost(id){if(!confirm('确定删除这条动态吗？'))return;const {error}=await client.from('posts').delete().eq('id',id);if(error){toast('删除失败：'+error.message);return}await loadAllData();renderPosts();renderMyPage();toast('已删除')}
+async function deleteComment(id){if(!confirm('确定删除这条评论吗？'))return;const {error}=await client.from('comments').delete().eq('id',id);if(error){toast('删除失败：'+error.message);return}await loadAllData();renderPosts();renderMyPage();toast('已删除')}
+async function sendComment(id){const input=$('ci-'+id),content=input.value.trim(),imgs=pendingCommentImages[id]||[];if(!content){toast('请输入评论文字');return}const {error}=await client.from('comments').insert({post_id:id,author_id:currentUser.id,content:content||'',images:imgs});if(error){toast('评论失败：'+error.message);return}input.value='';pendingCommentImages[id]=[];await loadAllData();renderPosts();renderMyPage();}
+function openLightbox(src){$('lightboxImg').src=src;$('lightbox').classList.remove('hide')}
 
-/* ==============================
-   首页帖子
-============================== */
-
-function renderCurrentPosts(){
-
-    const container =
-        document.getElementById(
-            "homePosts"
-        );
-
-    const keyword =
-        document.getElementById(
-            "searchInput"
-        )?.value
-        .trim()
-        .toLowerCase() || "";
-
-    let posts =
-        [...allPosts];
-
-    if(keyword){
-
-        posts =
-            posts.filter(p=>
-                String(p.content)
-                .toLowerCase()
-                .includes(keyword)
-                ||
-                String(p.category)
-                .toLowerCase()
-                .includes(keyword)
-            );
-
-    }
-
-    if(!posts.length){
-
-        container.innerHTML =
-            `<div class="empty">
-                暂时没有帖子
-            </div>`;
-
-        return;
-    }
-
-    container.innerHTML =
-        posts.map(postHTML).join("");
-
+function switchPage(page){
+  const home=page==='home';$('homePage').classList.toggle('hide',!home);$('myPage').classList.toggle('hide',home);
+  document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===page));
+  if(!home)renderMyPage();else renderPosts();
 }
-
-
-/* ==============================
-   热门
-============================== */
-
-function renderHotPosts(){
-
-    const container =
-        document.getElementById(
-            "hotPosts"
-        );
-
-    const posts =
-        [...allPosts]
-        .sort((a,b)=>{
-
-            const aCount =
-                allLikes.filter(
-                    x=>x.post_id===a.id
-                ).length;
-
-            const bCount =
-                allLikes.filter(
-                    x=>x.post_id===b.id
-                ).length;
-
-            return bCount-aCount;
-
-        });
-
-    if(!posts.length){
-
-        container.innerHTML =
-            `<div class="empty">
-                暂时没有帖子
-            </div>`;
-
-        return;
-    }
-
-    container.innerHTML =
-        posts.map(postHTML).join("");
-
+function renderMyPage(){
+  if(!currentUser)return;updateUserUI();const box=$('myContentList');
+  if(myTab==='posts'){const a=posts.filter(p=>p.author_id===currentUser.id);box.innerHTML=a.length?a.map(p=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><button class="action delete" data-myact="delete" data-id="${p.id}">🗑️ 删除</button></div><div class="post-content" style="margin-top:10px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><div class="post-time">${fmtTime(p.created_at)}</div></div>`).join(''):'<div class="empty"><span class="emoji">📝</span>你还没有发布过帖子哦</div>';
+  }else if(myTab==='comments'){const a=comments.filter(c=>c.author_id===currentUser.id);box.innerHTML=a.length?a.map(c=>`<div class="card" style="margin-bottom:12px"><div style="font-size:12px;color:var(--muted);margin-bottom:7px">回复帖子：${esc(posts.find(p=>p.id===c.post_id)?.content||'[图片帖]')}</div><div style="background:#f8fafc;border-radius:9px;padding:10px;font-size:13px;color:var(--sub)">${esc(c.content)||'[图片评论]'}</div><div style="display:flex;align-items:center;margin-top:7px"><span class="post-time">${fmtTime(c.created_at)}</span><button class="action delete" style="margin-left:auto" data-myact="delcomment" data-id="${c.id}">🗑️ 删除</button></div></div>`).join(''):'<div class="empty"><span class="emoji">💬</span>你还没有发表过评论哦</div>';
+  }else{const arr=posts.filter(p=>myTab==='likes'?isLiked(p.id):isFav(p.id));box.innerHTML=arr.length?arr.map(p=>`<div class="card" style="margin-bottom:12px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><div class="post-content" style="margin-top:9px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><button class="action ${myTab==='likes'?'like-on':'fav-on'}" data-myact="${myTab==='likes'?'unlike':'unfav'}" data-id="${p.id}">${myTab==='likes'?'❤️ 取消点赞':'⭐ 取消收藏'}</button></div>`).join(''):`<div class="empty"><span class="emoji">${myTab==='likes'?'❤️':'⭐'}</span>${myTab==='likes'?'你还没有点赞过帖子哦':'你还没有收藏过帖子哦'}</div>`}
+  box.querySelectorAll('[data-myact="delete"]').forEach(b=>b.onclick=()=>deletePost(b.dataset.id));box.querySelectorAll('[data-myact="delcomment"]').forEach(b=>b.onclick=()=>deleteComment(b.dataset.id));box.querySelectorAll('[data-myact="unlike"]').forEach(b=>b.onclick=()=>toggleLike(b.dataset.id));box.querySelectorAll('[data-myact="unfav"]').forEach(b=>b.onclick=()=>toggleFav(b.dataset.id));
 }
-
-
-/* ==============================
-   表白墙
-============================== */
-
-function renderConfessions(){
-
-    const container =
-        document.getElementById(
-            "confessionPosts"
-        );
-
-    const posts =
-        allPosts.filter(
-            p =>
-            p.category ===
-            "表白墙"
-        );
-
-    if(!posts.length){
-
-        container.innerHTML =
-            `<div class="empty">
-                💌 还没有表白内容
-            </div>`;
-
-        return;
-    }
-
-    container.innerHTML =
-        posts.map(postHTML).join("");
-
-}
-
-
-/* ==============================
-   点赞
-============================== */
-
-async function toggleLike(postId){
-
-    const existing =
-        allLikes.find(
-            x =>
-            x.post_id === postId &&
-            x.user_id === currentUser.id
-        );
-
-    if(existing){
-
-        const {
-            error
-        } = await client
-            .from("post_likes")
-            .delete()
-            .eq("post_id",postId)
-            .eq("user_id",currentUser.id);
-
-        if(error){
-
-            alert(error.message);
-
-            return;
-        }
-
-    }else{
-
-        const {
-            error
-        } = await client
-            .from("post_likes")
-            .insert({
-
-                post_id:
-                    postId,
-
-                user_id:
-                    currentUser.id
-
-            });
-
-        if(error){
-
-            alert(error.message);
-
-            return;
-        }
-
-    }
-
-    await loadAllData();
-
-}
-
-
-/* ==============================
-   收藏
-============================== */
-
-async function toggleFavorite(postId){
-
-    const existing =
-        allFavorites.find(
-            x =>
-            x.post_id === postId &&
-            x.user_id === currentUser.id
-        );
-
-    if(existing){
-
-        const {
-            error
-        } = await client
-            .from("post_favorites")
-            .delete()
-            .eq("post_id",postId)
-            .eq("user_id",currentUser.id);
-
-        if(error){
-
-            alert(error.message);
-
-            return;
-        }
-
-    }else{
-
-        const {
-            error
-        } = await client
-            .from("post_favorites")
-            .insert({
-
-                post_id:
-                    postId,
-
-                user_id:
-                    currentUser.id
-
-            });
-
-        if(error){
-
-            alert(error.message);
-
-            return;
-        }
-
-    }
-
-    await loadAllData();
-
-}
-
-
-/* ==============================
-   评论开关
-============================== */
-
-function toggleComments(postId){
-
-    const box =
-        document.getElementById(
-            "comments-"+postId
-        );
-
-    if(
-        box.style.display ===
-        "block"
-    ){
-
-        box.style.display =
-            "none";
-
-    }else{
-
-        box.style.display =
-            "block";
-
-    }
-
-}
-
-
-/* ==============================
-   添加评论
-============================== */
-
-async function addComment(postId){
-
-    const input =
-        document.getElementById(
-            "comment-input-"+postId
-        );
-
-    const content =
-        input.value.trim();
-
-    if(!content){
-
-        return;
-    }
-
-    const {
-        error
-    } = await client
-        .from("comments")
-        .insert({
-
-            post_id:
-                postId,
-
-            author_id:
-                currentUser.id,
-
-            content:
-                content
-
-        });
-
-    if(error){
-
-        alert(
-            "评论失败：\n"+
-            error.message
-        );
-
-        return;
-    }
-
-    input.value="";
-
-    await loadAllData();
-
-}
-
-
-/* ==============================
-   删除帖子
-============================== */
-
-async function deletePost(postId){
-
-    if(
-        !confirm(
-            "确定要删除这个帖子吗？"
-        )
-    ){
-        return;
-    }
-
-    const {
-        error
-    } = await client
-        .from("posts")
-        .delete()
-        .eq("id",postId);
-
-    if(error){
-
-        alert(
-            "删除失败：\n"+
-            error.message
-        );
-
-        return;
-    }
-
-    await loadAllData();
-
-}
-
-
-/* ==============================
-   删除评论
-============================== */
-
-async function deleteComment(commentId){
-
-    if(
-        !confirm(
-            "确定删除这条评论吗？"
-        )
-    ){
-        return;
-    }
-
-    const {
-        error
-    } = await client
-        .from("comments")
-        .delete()
-        .eq("id",commentId);
-
-    if(error){
-
-        alert(error.message);
-
-        return;
-    }
-
-    await loadAllData();
-
-}
-
-
-/* ==============================
-   我的帖子
-============================== */
-
-function showMyPosts(){
-
-    const container =
-        document.getElementById(
-            "mineContent"
-        );
-
-    const posts =
-        allPosts.filter(
-            p =>
-            p.author_id ===
-            currentUser.id
-        );
-
-    if(!posts.length){
-
-        container.innerHTML =
-            `<div class="card empty">
-                你还没有发布过帖子
-            </div>`;
-
-        return;
-    }
-
-    container.innerHTML =
-        posts.map(postHTML).join("");
-
-}
-
-
-/* ==============================
-   我的收藏
-============================== */
-
-function showMyFavorites(){
-
-    const container =
-        document.getElementById(
-            "mineContent"
-        );
-
-    const ids =
-        allFavorites
-        .filter(
-            x =>
-            x.user_id ===
-            currentUser.id
-        )
-        .map(x=>x.post_id);
-
-    const posts =
-        allPosts.filter(
-            p =>
-            ids.includes(p.id)
-        );
-
-    if(!posts.length){
-
-        container.innerHTML =
-            `<div class="card empty">
-                你还没有收藏帖子
-            </div>`;
-
-        return;
-    }
-
-    container.innerHTML =
-        posts.map(postHTML).join("");
-
-}
-
-
-/* ==============================
-   修改昵称
-============================== */
-
-function openNicknameModal(){
-
-    document.getElementById(
-        "nicknameInput"
-    ).value =
-        currentProfile.nickname ||
-        "";
-
-    document.getElementById(
-        "nicknameModal"
-    ).style.display =
-        "flex";
-
-}
-
-
-function closeNicknameModal(){
-
-    document.getElementById(
-        "nicknameModal"
-    ).style.display =
-        "none";
-
-}
-
-
-async function saveNickname(){
-
-    const nickname =
-        document
-        .getElementById(
-            "nicknameInput"
-        )
-        .value
-        .trim();
-
-    if(!nickname){
-
-        alert("昵称不能为空");
-
-        return;
-    }
-
-    if(nickname.length>20){
-
-        alert("昵称最多20个字");
-
-        return;
-    }
-
-    const {
-        data,
-        error
-    } = await client
-        .from("profiles")
-        .update({
-
-            nickname:
-                nickname
-
-        })
-        .eq("id",currentUser.id)
-        .select()
-        .single();
-
-    if(error){
-
-        alert(
-            "修改失败：\n"+
-            error.message
-        );
-
-        return;
-    }
-
-    currentProfile =
-        data;
-
-    updateUserUI();
-
-    closeNicknameModal();
-
-    alert("昵称修改成功");
-
-}
-
-
-/* ==============================
-   管理员
-============================== */
-
-async function loadAdminData(){
-
-    if(
-        !currentProfile?.["is-admin"]
-    ){
-        return;
-    }
-
-    document.getElementById(
-        "adminPostCount"
-    ).textContent =
-        allPosts.length;
-
-    document.getElementById(
-        "adminCommentCount"
-    ).textContent =
-        allComments.length;
-
-    const container =
-        document.getElementById(
-            "adminPosts"
-        );
-
-    if(!container)
-        return;
-
-    container.innerHTML =
-        allPosts
-        .map(postHTML)
-        .join("");
-
-}
-
-
-/* ==============================
-   HTML 防注入
-============================== */
-
-function escapeHTML(value){
-
-    return String(value ?? "")
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#039;");
-
-}
-
-
-/* ==============================
-   启动
-============================== */
 
 init();
-
 </script>
-
 </body>
 </html>
