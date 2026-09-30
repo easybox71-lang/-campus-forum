@@ -155,6 +155,12 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px 20px}
     <button class="side-item" data-cat="bagua">🍉 校园八卦</button>
     <button class="side-item" data-cat="love">💌 表白墙</button>
     <button class="side-item" data-cat="news">📢 校园新鲜事</button>
+    <button class="side-item" data-cat="校园">🏫 校园</button>
+    <button class="side-item" data-cat="学习">📚 学习</button>
+    <button class="side-item" data-cat="生活">🌿 生活</button>
+    <button class="side-item" data-cat="吐槽">💬 吐槽</button>
+    <button class="side-item" data-cat="求助">🆘 求助</button>
+    <button class="side-item" data-cat="失物招领">🔎 失物招领</button>
     <div class="sidebar-tip">💡 文庙论坛是校园交流测试版。请友善发言，不发布真实姓名、电话、住址等个人信息。</div>
   </aside>
 
@@ -175,6 +181,12 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px 20px}
             <option value="bagua">校园八卦</option>
             <option value="love">表白墙</option>
             <option value="news">校园新鲜事</option>
+            <option value="校园">校园</option>
+            <option value="学习">学习</option>
+            <option value="生活">生活</option>
+            <option value="吐槽">吐槽</option>
+            <option value="求助">求助</option>
+            <option value="失物招领">失物招领</option>
           </select>
           <label class="anon"><input type="checkbox" id="anonCheck"> 匿名发布</label>
           <span id="charCount" style="font-size:11px;color:var(--muted)">0 / 2000</span>
@@ -234,6 +246,15 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px 20px}
       <button class="avatar-choice" data-avatar="🤠">🤠</button>
     </div>
     <div class="modal-actions"><button class="secondary" id="cancelUser">关闭</button><button class="primary-btn" style="margin:0;flex:1" id="saveUserBtn">保存</button></div>
+  </div>
+</div>
+
+<div class="modal-mask hide" id="aboutModal">
+  <div class="modal">
+    <h3>🏫 关于思茅一中校园论坛</h3>
+    <div class="tip">本论坛为校园交流项目，与学校官方管理系统相互独立。</div>
+    <p style="line-height:1.8;color:var(--sub);font-size:14px;margin:14px 0">云南省思茅第一中学创建于1915年，是一所公立完全中学，位于云南省普洱市思茅区。办学理念：<b>精诚治学、博文笃行</b>；校训：<b>千教万教教人求真，千学万学学做真人</b>。</p>
+    <div class="modal-actions"><button class="secondary" id="closeAbout">关闭</button></div>
   </div>
 </div>
 
@@ -437,9 +458,9 @@ function imageGrid(images){if(!images?.length)return '';return `<div class="imag
 function postHtml(p){
   const st=postStats(p.id),liked=isLiked(p.id),fav=isFav(p.id),me=p.author_id===currentUser.id,prof=profileFor(p.author_id),name=displayName(p.author_id,p.anonymous),av=prof?.avatar||'😀',admin=!!p.is_admin;
   const cs=comments.filter(c=>c.post_id===p.id);
-  return `<article class="card post-card ${p.is_admin?'pinned':''}"><div class="post-head"><div class="avatar">${esc(av)}</div><div style="min-width:0;flex:1"><div class="post-user">${esc(name)} ${admin?'<span class="admin-badge">管理员</span>':''}</div><div class="post-time">${fmtTime(p.created_at)}</div></div></div><div class="post-meta"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${p.is_admin?'<span class="pin">👑 管理员发布</span>':''}</div><div class="post-content">${esc(p.content)}</div>${imageGrid(p.images)}<div class="actions"><button class="action ${liked?'like-on':''}" data-act="like" data-id="${p.id}">${liked?'❤️':'♡'} 点赞 ${st.likes}</button><button class="action ${fav?'fav-on':''}" data-act="fav" data-id="${p.id}">${fav?'⭐':'☆'} 收藏 ${st.favorites}</button><button class="action" data-act="comment" data-id="${p.id}">💬 评论 ${st.comments}</button>${(me||currentProfile?.is_admin)?`<button class="action delete" data-act="delete" data-id="${p.id}">🗑️ 删除</button>`:''}</div><div class="comment-area">${cs.map(commentHtml).join('')}<div class="comment-preview" id="cp-${p.id}"></div><div class="comment-input-row"><button class="comment-photo" data-act="photo" data-id="${p.id}">📷</button><input type="file" accept="image/*" multiple class="hidden-file cinput-file" data-id="${p.id}"><input class="comment-input" id="ci-${p.id}" maxlength="2000" placeholder="写下你的评论…"><button class="comment-send" data-act="sendcomment" data-id="${p.id}">发送</button></div></div></article>`;
+  return `<article class="card post-card ${p.is_admin?'pinned':''}"><div class="post-head"><div class="avatar">${esc(av)}</div><div style="min-width:0;flex:1"><div class="post-user">${esc(name)} ${admin?'<span class="admin-badge">管理员</span>':''}</div><div class="post-time">${fmtTime(p.created_at)}</div></div></div><div class="post-meta"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${p.is_admin?'<span class="pin">👑 管理员发布</span>':''}</div><div class="post-content">${esc(p.content)}</div>${imageGrid(p.images)}<div class="actions"><button class="action ${liked?'like-on':''}" data-act="like" data-id="${p.id}">${liked?'❤️':'♡'} 点赞 ${st.likes}</button><button class="action ${fav?'fav-on':''}" data-act="fav" data-id="${p.id}">${fav?'⭐':'☆'} 收藏 ${st.favorites}</button><button class="action" data-act="comment" data-id="${p.id}">💬 评论 ${st.comments}</button>${(me||currentProfile?.is_admin)?`<button class="action delete" data-act="delete" data-id="${p.id}">🗑️ 删除</button>`:''}</div><div class="comment-area">${cs.map(commentHtml).join('')}<div class="comment-preview" id="cp-${p.id}"></div><label class="anon" style="margin:5px 0 8px;display:inline-flex"><input type="checkbox" class="comment-anon" data-id="${p.id}"> 匿名评论</label><div class="comment-input-row"><button class="comment-photo" data-act="photo" data-id="${p.id}">📷</button><input type="file" accept="image/*" multiple class="hidden-file cinput-file" data-id="${p.id}"><input class="comment-input" id="ci-${p.id}" maxlength="2000" placeholder="写下你的评论…"><button class="comment-send" data-act="sendcomment" data-id="${p.id}">发送</button></div></div></article>`;
 }
-function commentHtml(c){const prof=profileFor(c.author_id),name=displayName(c.author_id),av=prof?.avatar||'😀';return `<div class="comment"><div class="comment-avatar">${esc(av)}</div><div class="comment-body"><div class="comment-head"><strong>${esc(name)}</strong>${c.is_admin?'<span class="admin-badge">管理员</span>':''}<span>${fmtTime(c.created_at)}</span>${canDeleteComment(c)?`<button class="comment-del" data-act="delcomment" data-cid="${c.id}">删除</button>`:''}</div><div class="comment-text">${esc(c.content)}</div>${(c.images||[]).map(s=>`<div class="comment-img" data-lightbox="${esc(s)}"><img src="${s}" alt="评论图片"></div>`).join('')}</div></div>`}
+function commentHtml(c){const prof=profileFor(c.author_id),name=displayName(c.author_id,!!c.anonymous),av=prof?.avatar||'😀';return `<div class="comment"><div class="comment-avatar">${esc(av)}</div><div class="comment-body"><div class="comment-head"><strong>${esc(name)}</strong>${c.is_admin?'<span class="admin-badge">管理员</span>':''}<span>${fmtTime(c.created_at)}</span>${canDeleteComment(c)?`<button class="comment-del" data-act="delcomment" data-cid="${c.id}">删除</button>`:''}</div><div class="comment-text">${esc(c.content)}</div>${(c.images||[]).map(s=>`<div class="comment-img" data-lightbox="${esc(s)}"><img src="${s}" alt="评论图片"></div>`).join('')}</div></div>`}
 
 function bindFeed(){
   document.querySelectorAll('[data-lightbox]').forEach(e=>e.onclick=()=>openLightbox(e.dataset.lightbox));
@@ -457,7 +478,7 @@ async function toggleLike(id){const exists=likes.find(x=>x.post_id===id&&x.user_
 async function toggleFav(id){const exists=favorites.find(x=>x.post_id===id&&x.user_id===currentUser.id);try{if(exists){const {error}=await client.from('post_favorites').delete().eq('post_id',id).eq('user_id',currentUser.id);if(error)throw error}else{const {error}=await client.from('post_favorites').insert({post_id:id,user_id:currentUser.id});if(error)throw error}await loadFavorites();renderPosts();renderMyPage()}catch(e){toast('收藏操作失败：'+e.message)}}
 async function deletePost(id){if(!confirm('确定删除这条动态吗？'))return;const {error}=await client.from('posts').delete().eq('id',id);if(error){toast('删除失败：'+error.message);return}await loadAllData();renderPosts();renderMyPage();toast('已删除')}
 async function deleteComment(id){if(!confirm('确定删除这条评论吗？'))return;const {error}=await client.from('comments').delete().eq('id',id);if(error){toast('删除失败：'+error.message);return}await loadAllData();renderPosts();renderMyPage();toast('已删除')}
-async function sendComment(id){const input=$('ci-'+id),content=input.value.trim(),imgs=pendingCommentImages[id]||[];if(!content){toast('请输入评论文字');return}const {error}=await client.from('comments').insert({post_id:id,author_id:currentUser.id,content:content||'',images:imgs});if(error){toast('评论失败：'+error.message);return}input.value='';pendingCommentImages[id]=[];await loadAllData();renderPosts();renderMyPage();}
+async function sendComment(id){const input=$('ci-'+id),content=input.value.trim(),imgs=pendingCommentImages[id]||[],anonymous=!!document.querySelector(`.comment-anon[data-id="${id}"]`)?.checked;if(!content){toast('请输入评论文字');return}const {error}=await client.from('comments').insert({post_id:id,author_id:currentUser.id,content:content||'',images:imgs,anonymous});if(error){toast('评论失败：'+error.message);return}input.value='';pendingCommentImages[id]=[];await loadAllData();renderPosts();renderMyPage();}
 function openLightbox(src){$('lightboxImg').src=src;$('lightbox').classList.remove('hide')}
 
 function switchPage(page){
