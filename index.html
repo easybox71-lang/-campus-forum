@@ -130,8 +130,12 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px 20px}
   .mobile-nav button{border:0;background:none;color:var(--muted);font-size:11px;font-weight:700;padding:4px 18px}.mobile-nav button.active{color:var(--primary)}
 }
 </style>
+
+<style id="v11-invite-style">#inviteGate{position:fixed;inset:0;background:#f1f5f9;display:flex;align-items:center;justify-content:center;z-index:99999}.invite-card{background:#fff;width:320px;padding:30px;border-radius:20px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.1)}.invite-card input{width:100%;padding:12px;box-sizing:border-box;margin:15px 0;border-radius:10px;border:1px solid #ddd}.invite-card button{width:100%;padding:12px;border:0;border-radius:10px;background:#2563eb;color:#fff}#inviteMsg{color:red;margin-top:10px}</style>
 </head>
 <body>
+<div id="inviteGate"><div class="invite-card"><h2>🏫 思茅一中校园论坛</h2><p>该论坛为内部测试版本<br>如需访问请输入邀请码</p><input id="inviteInput" placeholder="请输入邀请码"><button id="inviteSubmit">进入论坛</button><div id="inviteMsg"></div></div></div>
+
 
 <header>
   <div class="nav">
@@ -496,5 +500,7 @@ function renderMyPage(){
 
 init();
 </script>
+
+<script id="v11-invite-script">(function(){const k="simao_forum_v11_pass";window.addEventListener("load",()=>{const g=document.getElementById("inviteGate");if(localStorage.getItem(k)==="yes"){if(g)g.style.display="none";}const b=document.getElementById("inviteSubmit");if(b)b.onclick=()=>{if(document.getElementById("inviteInput").value.trim()==="6690"){localStorage.setItem(k,"yes");if(g)g.style.display="none";}else{document.getElementById("inviteMsg").innerText="❌ 邀请码错误";}}});})();</script>
 </body>
 </html>
