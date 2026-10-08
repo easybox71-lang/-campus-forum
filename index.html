@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#2563eb">
-<title>思茅一中校园论坛测试版 v1.1</title>
+<title>思茅一中校园论坛测试版 v1.1.1</title>
 <style>
 :root{
   --primary:#2563eb;--primary-dark:#1d4ed8;--primary-soft:#eff6ff;
@@ -14,6 +14,8 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:"PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
+html.invite-locked,html.invite-locked body{overflow:hidden!important;width:100%;height:100%;}
+body.invite-locked{position:fixed!important;left:0;right:0;top:0;width:100%;overflow:hidden!important;touch-action:none;}
 body{background:linear-gradient(180deg,#f8fafc,#eef2f7);color:var(--text);min-height:100vh;line-height:1.6;padding-bottom:env(safe-area-inset-bottom)}
 button,input,textarea,select{font:inherit}
 button{cursor:pointer}
@@ -131,7 +133,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px 20px}
 }
 </style>
 <style>
-#v11In<div class="v11NoticeCard"><h3>📢 思茅一中校园论坛测试版 v1.1 更新</h3><p>本次更新：</p><ul><li>新增内测邀请码访问系统</li><li>优化论坛访问安全</li><li>修复部分问题</li><li>提升论坛稳定性</li></ul><h4>📜 更新日志</h4><p>v1.1（2026-10-04）<br>- 新增内测邀请码系统<br>- 增加版本公告与更新日志<br><br>v1（2026-09-26）<br>- 完成论坛基础功能<br>- 支持发帖、评论、点赞、收藏<br>- 加入管理员系统</p></div>viteGate{position:fixed;inset:0;background:#f1f5f9;display:flex;align-items:center;justify-content:center;z-index:99999}
+#v11InviteGate{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;min-height:100dvh;background:#f1f5f9;display:flex;align-items:center;justify-content:center;z-index:2147483647;overflow:hidden;overscroll-behavior:none;}
+#v11InviteGate *{touch-action:manipulation;}
+.v11NoticeCard{margin:16px auto;padding:16px;max-width:1200px;background:#fff;border-radius:16px;border:1px solid #e2e8f0}
 .v11InviteCard{background:#fff;padding:30px;border-radius:20px;width:320px;text-align:center}
 .v11InviteCard input{width:100%;padding:12px;margin:15px 0;box-sizing:border-box;border:1px solid #ddd;border-radius:10px}
 .v11InviteCard button{width:100%;padding:12px;border:0;border-radius:10px;background:#2563eb;color:#fff}
@@ -501,7 +505,71 @@ function renderMyPage(){
   box.querySelectorAll('[data-myact="delete"]').forEach(b=>b.onclick=()=>deletePost(b.dataset.id));box.querySelectorAll('[data-myact="delcomment"]').forEach(b=>b.onclick=()=>deleteComment(b.dataset.id));box.querySelectorAll('[data-myact="unlike"]').forEach(b=>b.onclick=()=>toggleLike(b.dataset.id));box.querySelectorAll('[data-myact="unfav"]').forEach(b=>b.onclick=()=>toggleFav(b.dataset.id));
 }
 
-init();
 </script>
-<script>(function(){const K="simao_forum_v11_invite",C="6690";function c(){let e=document.getElementById("v11InviteGate");if(e)e.style.display="none"}window.addEventListener("load",()=>{if(localStorage.getItem(K)==="ok")c();let b=document.getElementById("v11InviteBtn");if(b)b.onclick=()=>{if(document.getElementById("v11InviteInput").value.trim()===C){localStorage.setItem(K,"ok");c()}else document.getElementById("v11InviteMsg").innerText="❌ 邀请码错误"}})})();</script></body>
+<script>
+(function(){
+  const KEY="simao_forum_v11_invite", CODE="6690";
+  const gate=document.getElementById("v11InviteGate");
+  const input=document.getElementById("v11InviteInput");
+  const btn=document.getElementById("v11InviteBtn");
+  const msg=document.getElementById("v11InviteMsg");
+  let lockedScrollY=0;
+  let unlocked=false;
+
+  function lockPage(){
+    lockedScrollY=window.scrollY||window.pageYOffset||0;
+    document.documentElement.classList.add("invite-locked");
+    document.body.classList.add("invite-locked");
+    document.body.style.top=(-lockedScrollY)+"px";
+    if(gate) gate.style.display="flex";
+  }
+
+  function unlockPage(){
+    if(unlocked) return;
+    unlocked=true;
+    localStorage.setItem(KEY,"ok");
+    if(gate) gate.style.display="none";
+    document.documentElement.classList.remove("invite-locked");
+    document.body.classList.remove("invite-locked");
+    document.body.style.top="";
+    window.scrollTo(0,lockedScrollY);
+    if(typeof init==="function") init();
+  }
+
+  function verify(){
+    if(input.value.trim()===CODE){
+      msg.textContent="✅ 验证成功，正在进入论坛…";
+      msg.style.color="#16a34a";
+      unlockPage();
+    }else{
+      msg.textContent="❌ 邀请码错误，请重新输入";
+      msg.style.color="#ef4444";
+      input.focus();
+      input.select();
+    }
+  }
+
+  // 已验证用户直接进入；未验证用户从页面加载开始就锁死。
+  if(localStorage.getItem(KEY)==="ok") unlockPage();
+  else {
+    lockPage();
+    if(input) input.focus();
+  }
+
+  if(btn) btn.addEventListener("click",verify);
+  if(input) input.addEventListener("keydown",e=>{if(e.key==="Enter") verify();});
+
+  // 防止触摸/滚轮事件造成页面穿透。
+  ["wheel","touchmove"].forEach(type=>{
+    document.addEventListener(type,e=>{
+      if(!unlocked && gate && gate.style.display!=="none") e.preventDefault();
+    },{passive:false,capture:true});
+  });
+  document.addEventListener("keydown",e=>{
+    if(!unlocked && ["PageDown","PageUp","Home","End","ArrowDown","ArrowUp","Space"].includes(e.code)){
+      e.preventDefault();
+    }
+  },{capture:true});
+})();
+</script></body>
 </html>
