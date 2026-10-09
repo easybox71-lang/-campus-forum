@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#2563eb">
-<title>思茅一中校园论坛测试版 v1.3</title>
+<title>思茅一中校园论坛测试版 v1.4</title>
 <style>
 :root{
   --primary:#2563eb;--primary-dark:#1d4ed8;--primary-soft:#eff6ff;
@@ -229,22 +229,29 @@ header{background:rgba(248,251,255,.62);backdrop-filter:blur(30px) saturate(185%
 @media(max-width:768px){.v12-brand-mark{width:72px;height:72px;border-radius:24px}.v12-splash-inner{backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}.card:hover{transform:none}}
 @media(prefers-reduced-motion:reduce){.v12-splash:after,.v12-brand-mark:before,.intro-enter:before{animation:none!important}::view-transition-old(forum-content),::view-transition-new(forum-content){animation:none!important}}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.v12-splash-inner,.intro-feature,header,.mobile-nav,.modal{background:rgba(255,255,255,.96)}}
+
+/* v1.4 explicit onboarding guide */
+.intro-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;margin-bottom:14px;border:1px solid rgba(255,255,255,.9);border-radius:999px;background:rgba(255,255,255,.55);color:#31578f;font-size:11px;font-weight:800;letter-spacing:.09em;box-shadow:inset 0 1px 0 #fff,0 5px 18px rgba(40,75,130,.05)}
+.intro-feature-list{display:grid;gap:9px;margin:18px 0 20px;text-align:left}
+.intro-feature{display:flex;align-items:center;gap:12px;min-height:65px;padding:11px 13px;border:1px solid rgba(255,255,255,.9);border-radius:17px}
+.intro-feature>div{min-width:0;flex:1}.intro-feature b{display:block;color:#152846;font-size:13px;line-height:1.5}.intro-feature small{display:block;margin-top:3px;color:#64748b;font-size:11px;line-height:1.55}.feature-arrow{opacity:.5;font-size:16px}
+.v12-splash h1{line-height:1.25}.v12-splash .splash-desc{margin-top:12px;margin-bottom:14px}
 </style>
 </head>
 <body><div class="v12-splash" id="v12Splash" aria-label="欢迎使用思茅一中校园论坛">
   <div class="intro-orb orb-one"></div><div class="intro-orb orb-two"></div>
   <div class="v12-splash-inner">
     <div class="v12-brand-mark"><span><svg class="school-emblem" viewBox="0 0 100 100" role="img" aria-label="思茅一中校徽风格标志"><defs><linearGradient id="crestBlue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7dd3fc"/><stop offset=".48" stop-color="#3b82f6"/><stop offset="1" stop-color="#1e40af"/></linearGradient></defs><circle cx="50" cy="50" r="47" fill="url(#crestBlue)"/><circle cx="50" cy="50" r="41" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.6"/><circle cx="50" cy="50" r="34" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.55)" stroke-width="1"/><path d="M24 30 Q50 21 76 30" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><text x="50" y="26" text-anchor="middle" font-size="7.5" font-weight="800" fill="#fff" letter-spacing="1">思 茅 一 中</text><path d="M30 43 L48 48 L48 68 Q38 62 30 64 Z" fill="#fff"/><path d="M70 43 L52 48 L52 68 Q62 62 70 64 Z" fill="#dbeafe"/><path d="M50 47 L50 69" stroke="#1d4ed8" stroke-width="2"/><path d="M38 48 L44 50 M38 54 L44 56 M62 50 L68 48 M62 56 L68 54" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/><path d="M50 34 L54 40 L61 41 L56 46 L57 53 L50 49 L43 53 L44 46 L39 41 L46 40 Z" fill="#fef3c7" stroke="#fff" stroke-width=".7"/><text x="50" y="81" text-anchor="middle" font-size="8" font-weight="900" fill="#fff" letter-spacing="1.4">1915</text></svg></span><i></i></div>
-    <div class="intro-eyebrow"><span class="intro-dot"></span> SIMAO CAMPUS COMMUNITY</div>
-    <h1>校园里的故事，<br><span>从这里开始。</span></h1>
-    <p class="splash-desc">欢迎来到思茅一中校园论坛。分享新鲜事、记录日常、寻找同好，让每一次友善交流都被看见。</p>
+    <div class="intro-eyebrow"><span class="intro-dot"></span> 首次使用指南 · QUICK START</div>
+    <h1>欢迎来到校园，<br><span>先花 10 秒了解。</span></h1>
+    <p class="splash-desc">这里是思茅一中校园论坛。跟着下面的简单指引，马上学会浏览、发布和互动。</p>
     <div class="intro-feature-list">
-      <div class="intro-feature"><span class="feature-icon">💬</span><div><b>分享校园动态</b><small>记录生活，也倾听彼此</small></div><span class="feature-arrow">↗</span></div>
-      <div class="intro-feature"><span class="feature-icon">🌿</span><div><b>找到同频伙伴</b><small>学习、生活与校园话题</small></div><span class="feature-arrow">↗</span></div>
-      <div class="intro-feature"><span class="feature-icon">🛡️</span><div><b>友善、安全交流</b><small>尊重彼此，保护个人隐私</small></div><span class="feature-arrow">↗</span></div>
+      <div class="intro-feature"><span class="feature-icon">🧭</span><div><b>① 浏览校园动态</b><small>在首页切换板块，查看校园八卦、学习、生活和新鲜事。</small></div><span class="feature-arrow">↗</span></div>
+      <div class="intro-feature"><span class="feature-icon">✍️</span><div><b>② 发布你的内容</b><small>在首页输入文字、选择分类；需要时可添加图片，再点发布。</small></div><span class="feature-arrow">↗</span></div>
+      <div class="intro-feature"><span class="feature-icon">💙</span><div><b>③ 互动与管理个人内容</b><small>可以点赞、收藏、评论；到「我的」查看自己的帖子和收藏。</small></div><span class="feature-arrow">↗</span></div>
     </div>
     <button class="intro-enter" id="startForumBtn" disabled><span>正在准备论坛…</span><b>→</b></button>
-    <div class="intro-footnote" id="introFootnote">正在连接校园社区，请稍候</div>
+    <div class="intro-footnote" id="introFootnote">小提醒：请友善交流，不要发布电话、住址等隐私信息。</div>
   </div>
 </div>
 
