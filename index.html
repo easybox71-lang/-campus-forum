@@ -132,40 +132,78 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px 20px}
 }
 </style>
 <style>
-/* v1.2 smooth motion system */
-:root{--ease-out:cubic-bezier(.22,1,.36,1);--ease-soft:cubic-bezier(.2,.75,.25,1)}
-body{animation:page-arrive .55s var(--ease-out) both}
-.card,.my-page,.notice,.sidebar,.modal,.side-item,.tab,.mini,.action,.sort-btn,.upload,.primary-btn,.comment-send,.user-chip{transition:transform .28s var(--ease-out),box-shadow .32s var(--ease-out),background-color .25s ease,border-color .25s ease,color .2s ease,opacity .25s ease}
-.card:hover{transform:translateY(-2px)}
-button:active,.upload:active{transform:scale(.975)}
+/* v1.2 refined motion + app-style welcome */
+:root{--ease-out:cubic-bezier(.16,1,.3,1);--ease-soft:cubic-bezier(.22,.68,0,1);--motion-fast:220ms;--motion-mid:420ms;--motion-slow:720ms}
+html{scroll-behavior:smooth}
+body{animation:page-arrive .7s var(--ease-out) both}
+.card,.my-page,.notice,.sidebar,.modal,.side-item,.tab,.mini,.action,.sort-btn,.upload,.primary-btn,.comment-send,.user-chip,.nav-link{transition:transform var(--motion-mid) var(--ease-out),box-shadow var(--motion-mid) var(--ease-out),background-color var(--motion-fast) ease,border-color var(--motion-fast) ease,color var(--motion-fast) ease,opacity var(--motion-mid) ease}
+.card:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(15,23,42,.09)}
+button:active,.upload:active{transform:scale(.965)}
 button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid rgba(37,99,235,.22);outline-offset:2px}
-.post-card{animation:card-arrive .42s var(--ease-out) both}
-.post-card:nth-child(2){animation-delay:.035s}.post-card:nth-child(3){animation-delay:.07s}.post-card:nth-child(4){animation-delay:.105s}
-.modal-mask{animation:mask-in .22s ease both}.modal{animation:modal-in .32s var(--ease-out) both}
-.v12-splash{position:fixed;inset:0;z-index:2147483646;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 20%,#dbeafe 0%,#eff6ff 38%,#f8fafc 100%);opacity:1;visibility:visible;transition:opacity .72s var(--ease-out),visibility .72s ease;overflow:hidden}
-.v12-splash.splash-out{opacity:0;visibility:hidden;pointer-events:none}
-.v12-splash-inner{width:min(440px,100%);text-align:center;animation:splash-rise .8s var(--ease-out) both}
-.v12-brand-mark{width:76px;height:76px;margin:0 auto 22px;border-radius:25px;display:grid;place-items:center;color:#fff;font-size:34px;font-weight:900;background:linear-gradient(145deg,#60a5fa,#1d4ed8);box-shadow:0 18px 40px rgba(37,99,235,.28);animation:mark-float 3s ease-in-out infinite}
-.v12-splash h1{font-size:clamp(25px,6vw,34px);letter-spacing:.02em;font-weight:900;color:#0f172a}
-.v12-splash .splash-subtitle{margin-top:9px;color:#475569;font-size:14px;letter-spacing:.12em}
-.v12-splash .splash-desc{max-width:330px;margin:22px auto 27px;color:#64748b;font-size:14px;line-height:1.9}
-.v12-progress{height:4px;width:min(220px,75%);margin:0 auto;border-radius:99px;background:rgba(37,99,235,.12);overflow:hidden}
-.v12-progress:after{content:"";display:block;width:42%;height:100%;border-radius:99px;background:linear-gradient(90deg,#60a5fa,#1d4ed8);animation:progress-sweep 1.35s ease-in-out infinite}
-.v12-loading{margin-top:13px;color:#94a3b8;font-size:11px;letter-spacing:.16em}
+.post-card{animation:card-arrive .58s var(--ease-out) both;will-change:transform,opacity}
+.post-card:nth-child(2){animation-delay:.055s}.post-card:nth-child(3){animation-delay:.11s}.post-card:nth-child(4){animation-delay:.165s}.post-card:nth-child(5){animation-delay:.22s}.post-card:nth-child(n+6){animation-delay:.25s}
+.modal-mask{animation:mask-in .28s ease both}.modal{animation:modal-in .42s var(--ease-out) both}
+.v12-splash{position:fixed;inset:0;z-index:2147483646;display:grid;place-items:center;padding:clamp(20px,5vw,44px);background:linear-gradient(145deg,#f8fbff 0%,#eef5ff 45%,#e7efff 100%);opacity:1;visibility:visible;transform:translateZ(0);overflow:hidden;transition:opacity .82s var(--ease-out),visibility .82s ease,filter .82s var(--ease-out)}
+.v12-splash:before{content:"";position:absolute;inset:0;opacity:.35;background-image:radial-gradient(rgba(37,99,235,.19) .8px,transparent .8px);background-size:22px 22px;mask-image:linear-gradient(to bottom,black,transparent 85%)}
+.v12-splash.splash-out{opacity:0;visibility:hidden;pointer-events:none;filter:blur(8px)}
+.v12-splash-inner{position:relative;z-index:2;width:min(440px,100%);max-height:calc(100dvh - 36px);overflow:auto;scrollbar-width:none;text-align:left;padding:clamp(22px,5vw,36px);border:1px solid rgba(255,255,255,.85);border-radius:30px;background:rgba(255,255,255,.76);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 28px 90px rgba(38,78,145,.15),inset 0 1px 0 rgba(255,255,255,.9);animation:intro-card-in 1s var(--ease-out) both}
+.v12-splash-inner>*{position:relative;z-index:1}
+.v12-brand-mark{position:relative;width:62px;height:62px;margin:0 0 25px;border-radius:21px;display:grid;place-items:center;color:#fff;font-size:29px;font-weight:900;background:linear-gradient(145deg,#60a5fa,#2563eb 55%,#1d4ed8);box-shadow:0 13px 30px rgba(37,99,235,.28);animation:mark-float 4s ease-in-out infinite}
+.v12-brand-mark:after{content:"";position:absolute;inset:-6px;border:1px solid rgba(37,99,235,.18);border-radius:25px;animation:mark-ring 3s ease-out infinite}
+.v12-brand-mark i{position:absolute;width:12px;height:12px;right:-4px;top:-4px;border:3px solid white;border-radius:50%;background:#34d399}
+.intro-eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:14px;color:#64748b;font-size:10px;font-weight:800;letter-spacing:.17em}
+.intro-dot{width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 0 4px rgba(52,211,153,.13)}
+.v12-splash h1{font-size:clamp(29px,7vw,39px);line-height:1.25;letter-spacing:-.045em;font-weight:900;color:#0f172a}
+.v12-splash h1 span{color:#2563eb}
+.v12-splash .splash-desc{margin:16px 0 23px;color:#64748b;font-size:13px;line-height:1.9}
+.intro-feature-list{display:grid;gap:9px;margin-bottom:22px}
+.intro-feature{display:flex;align-items:center;gap:12px;min-height:61px;padding:10px 12px;border:1px solid rgba(226,232,240,.86);border-radius:15px;background:rgba(255,255,255,.68);animation:feature-in .7s var(--ease-out) both;transition:transform .32s var(--ease-out),background .25s ease,border-color .25s ease}
+.intro-feature:nth-child(2){animation-delay:.09s}.intro-feature:nth-child(3){animation-delay:.18s}.intro-feature:hover{transform:translateX(4px);background:#fff;border-color:#bfdbfe}
+.feature-icon{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border-radius:12px;background:#eff6ff;font-size:18px}
+.intro-feature div{min-width:0;display:grid;gap:2px;flex:1}.intro-feature b{font-size:13px;color:#1e293b}.intro-feature small{font-size:11px;color:#94a3b8}.feature-arrow{font-size:15px;color:#94a3b8}
+.intro-enter{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;border-radius:15px;padding:15px 17px;color:white;background:linear-gradient(110deg,#3b82f6,#2563eb 55%,#1d4ed8);box-shadow:0 10px 22px rgba(37,99,235,.23);font-weight:800;font-size:14px;transition:transform .35s var(--ease-out),box-shadow .35s var(--ease-out),filter .25s ease;cursor:pointer}
+.intro-enter b{display:grid;place-items:center;width:28px;height:28px;border-radius:10px;background:rgba(255,255,255,.18);font-size:20px;font-weight:500;transition:transform .35s var(--ease-out)}
+.intro-enter:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 15px 30px rgba(37,99,235,.3);filter:saturate(1.08)}.intro-enter:not(:disabled):hover b{transform:translateX(4px)}.intro-enter:disabled{opacity:.68;cursor:wait}
+.intro-footnote{text-align:center;margin-top:12px;color:#94a3b8;font-size:10px;letter-spacing:.04em}
+.intro-orb{position:absolute;border-radius:50%;filter:blur(2px);pointer-events:none}.orb-one{width:290px;height:290px;top:-90px;right:-90px;background:radial-gradient(circle,rgba(96,165,250,.26),rgba(96,165,250,0) 70%);animation:orb-drift 8s ease-in-out infinite}.orb-two{width:330px;height:330px;bottom:-140px;left:-110px;background:radial-gradient(circle,rgba(129,140,248,.2),rgba(129,140,248,0) 70%);animation:orb-drift 10s ease-in-out infinite reverse}
+.page-enter{animation:section-enter .62s var(--ease-out) both;will-change:opacity,transform,filter}
+.page-exit{animation:section-exit .18s ease both;pointer-events:none}
+.tab-panel-enter{animation:tab-enter .4s var(--ease-out) both}
 .contact-card{display:flex;gap:12px;align-items:flex-start;margin:0 0 16px;padding:15px 16px;border:1px solid #dbeafe;border-radius:14px;background:linear-gradient(135deg,#eff6ff,#fff)}
 .contact-icon{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border-radius:12px;background:#dbeafe;font-size:19px}
 .contact-card h3{font-size:14px;margin:0 0 3px;color:#1e40af}.contact-card p{font-size:13px;color:#475569;line-height:1.7}.contact-card a{color:#2563eb;font-weight:700;text-decoration:none;overflow-wrap:anywhere}.contact-card a:hover{text-decoration:underline}
-@keyframes page-arrive{from{opacity:.82}to{opacity:1}}
-@keyframes card-arrive{from{opacity:0;transform:translateY(12px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes mask-in{from{opacity:0}to{opacity:1}}
-@keyframes modal-in{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes splash-rise{from{opacity:0;transform:translateY(18px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes mark-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-@keyframes progress-sweep{0%{transform:translateX(-120%)}100%{transform:translateX(300%)}}
+@keyframes page-arrive{from{opacity:0}to{opacity:1}}
+@keyframes card-arrive{from{opacity:0;transform:translateY(20px) scale(.985);filter:blur(3px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@keyframes mask-in{from{opacity:0;backdrop-filter:blur(0)}to{opacity:1;backdrop-filter:blur(4px)}}
+@keyframes modal-in{from{opacity:0;transform:translateY(22px) scale(.97);filter:blur(4px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@keyframes intro-card-in{from{opacity:0;transform:translateY(26px) scale(.965);filter:blur(10px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@keyframes feature-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes section-enter{from{opacity:0;transform:translateY(18px) scale(.992);filter:blur(4px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@keyframes section-exit{to{opacity:0;transform:translateY(-5px) scale(.997)}}
+@keyframes tab-enter{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+@keyframes mark-float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(-2deg)}}
+@keyframes mark-ring{0%{transform:scale(.88);opacity:.6}100%{transform:scale(1.2);opacity:0}}
+@keyframes orb-drift{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-18px,16px,0)}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
-@media(max-width:768px){.contact-card{margin-bottom:13px}.v12-splash .splash-desc{margin:18px auto 24px}}
+@media(max-width:768px){.contact-card{margin-bottom:13px}.v12-splash{padding:16px}.v12-splash-inner{padding:25px 21px;border-radius:25px}.v12-brand-mark{margin-bottom:21px}.v12-splash .splash-desc{margin:14px 0 20px}.intro-feature{min-height:57px}}
+@media(max-height:720px){.v12-splash-inner{padding-top:19px;padding-bottom:19px}.v12-brand-mark{width:52px;height:52px;margin-bottom:15px;border-radius:17px}.v12-splash h1{font-size:29px}.v12-splash .splash-desc{margin:11px 0 14px}.intro-feature-list{gap:6px;margin-bottom:14px}.intro-feature{min-height:51px;padding:7px 10px}.feature-icon{width:33px;height:33px;flex-basis:33px}.intro-enter{padding:12px 15px}}
 </style></head>
-<body><div class="v12-splash" id="v12Splash" aria-label="论坛启动页"><div class="v12-splash-inner"><div class="v12-brand-mark">思</div><h1>思茅一中校园论坛</h1><div class="splash-subtitle">文庙论坛 · 校园交流空间</div><p class="splash-desc">分享校园新鲜事，记录青春日常。<br>在这里友善交流、彼此倾听，让每一个校园故事都值得被看见。</p><div class="v12-progress"></div><div class="v12-loading">正在为你准备校园动态…</div></div></div>
+<body><div class="v12-splash" id="v12Splash" aria-label="欢迎使用思茅一中校园论坛">
+  <div class="intro-orb orb-one"></div><div class="intro-orb orb-two"></div>
+  <div class="v12-splash-inner">
+    <div class="v12-brand-mark"><span>思</span><i></i></div>
+    <div class="intro-eyebrow"><span class="intro-dot"></span> SIMAO CAMPUS COMMUNITY</div>
+    <h1>校园里的故事，<br><span>从这里开始。</span></h1>
+    <p class="splash-desc">欢迎来到思茅一中校园论坛。分享新鲜事、记录日常、寻找同好，让每一次友善交流都被看见。</p>
+    <div class="intro-feature-list">
+      <div class="intro-feature"><span class="feature-icon">💬</span><div><b>分享校园动态</b><small>记录生活，也倾听彼此</small></div><span class="feature-arrow">↗</span></div>
+      <div class="intro-feature"><span class="feature-icon">🌿</span><div><b>找到同频伙伴</b><small>学习、生活与校园话题</small></div><span class="feature-arrow">↗</span></div>
+      <div class="intro-feature"><span class="feature-icon">🛡️</span><div><b>友善、安全交流</b><small>尊重彼此，保护个人隐私</small></div><span class="feature-arrow">↗</span></div>
+    </div>
+    <button class="intro-enter" id="startForumBtn" disabled><span>正在准备论坛…</span><b>→</b></button>
+    <div class="intro-footnote" id="introFootnote">正在连接校园社区，请稍候</div>
+  </div>
+</div>
 
 <header>
   <div class="nav">
@@ -516,8 +554,18 @@ async function deleteComment(id){if(!confirm('确定删除这条评论吗？'))r
 async function sendComment(id){const input=$('ci-'+id),content=input.value.trim(),imgs=pendingCommentImages[id]||[],anonymous=!!document.querySelector(`.comment-anon[data-id="${id}"]`)?.checked;if(!content){toast('请输入评论文字');return}const {error}=await client.from('comments').insert({post_id:id,author_id:currentUser.id,content:content||'',images:imgs,anonymous});if(error){toast('评论失败：'+error.message);return}input.value='';pendingCommentImages[id]=[];await loadAllData();renderPosts();renderMyPage();}
 function openLightbox(src){$('lightboxImg').src=src;$('lightbox').classList.remove('hide')}
 
+let activePage='home';
 function switchPage(page){
-  const home=page==='home';$('homePage').classList.toggle('hide',!home);$('myPage').classList.toggle('hide',home);
+  const home=page==='home';
+  const next=home?$('homePage'):$('myPage');
+  const current=activePage==='home'?$('homePage'):$('myPage');
+  if(page===activePage){if(!home)renderMyPage();else renderPosts();return;}
+  current.classList.remove('page-enter');current.classList.add('page-exit');
+  window.setTimeout(()=>{
+    current.classList.add('hide');current.classList.remove('page-exit');
+    next.classList.remove('hide');next.classList.remove('page-enter');void next.offsetWidth;next.classList.add('page-enter');
+  },150);
+  activePage=page;
   document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===page));
   if(!home)renderMyPage();else renderPosts();
 }
@@ -526,14 +574,27 @@ function renderMyPage(){
   if(myTab==='posts'){const a=posts.filter(p=>p.author_id===currentUser.id);box.innerHTML=a.length?a.map(p=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><button class="action delete" data-myact="delete" data-id="${p.id}">🗑️ 删除</button></div><div class="post-content" style="margin-top:10px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><div class="post-time">${fmtTime(p.created_at)}</div></div>`).join(''):'<div class="empty"><span class="emoji">📝</span>你还没有发布过帖子哦</div>';
   }else if(myTab==='comments'){const a=comments.filter(c=>c.author_id===currentUser.id);box.innerHTML=a.length?a.map(c=>`<div class="card" style="margin-bottom:12px"><div style="font-size:12px;color:var(--muted);margin-bottom:7px">回复帖子：${esc(posts.find(p=>p.id===c.post_id)?.content||'[图片帖]')}</div><div style="background:#f8fafc;border-radius:9px;padding:10px;font-size:13px;color:var(--sub)">${esc(c.content)||'[图片评论]'}</div><div style="display:flex;align-items:center;margin-top:7px"><span class="post-time">${fmtTime(c.created_at)}</span><button class="action delete" style="margin-left:auto" data-myact="delcomment" data-id="${c.id}">🗑️ 删除</button></div></div>`).join(''):'<div class="empty"><span class="emoji">💬</span>你还没有发表过评论哦</div>';
   }else{const arr=posts.filter(p=>myTab==='likes'?isLiked(p.id):isFav(p.id));box.innerHTML=arr.length?arr.map(p=>`<div class="card" style="margin-bottom:12px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><div class="post-content" style="margin-top:9px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><button class="action ${myTab==='likes'?'like-on':'fav-on'}" data-myact="${myTab==='likes'?'unlike':'unfav'}" data-id="${p.id}">${myTab==='likes'?'❤️ 取消点赞':'⭐ 取消收藏'}</button></div>`).join(''):`<div class="empty"><span class="emoji">${myTab==='likes'?'❤️':'⭐'}</span>${myTab==='likes'?'你还没有点赞过帖子哦':'你还没有收藏过帖子哦'}</div>`}
+  box.classList.remove('tab-panel-enter');void box.offsetWidth;box.classList.add('tab-panel-enter');
   box.querySelectorAll('[data-myact="delete"]').forEach(b=>b.onclick=()=>deletePost(b.dataset.id));box.querySelectorAll('[data-myact="delcomment"]').forEach(b=>b.onclick=()=>deleteComment(b.dataset.id));box.querySelectorAll('[data-myact="unlike"]').forEach(b=>b.onclick=()=>toggleLike(b.dataset.id));box.querySelectorAll('[data-myact="unfav"]').forEach(b=>b.onclick=()=>toggleFav(b.dataset.id));
 }
 
-const splashStartedAt=performance.now();
+const splash=document.getElementById('v12Splash');
+const startForumBtn=document.getElementById('startForumBtn');
+const introFootnote=document.getElementById('introFootnote');
+let forumReady=false;
+startForumBtn.addEventListener('click',()=>{
+  if(!forumReady)return;
+  startForumBtn.classList.add('entering');
+  startForumBtn.querySelector('span').textContent='欢迎加入，正在进入…';
+  splash.classList.add('splash-out');
+  document.body.classList.add('forum-entered');
+  window.setTimeout(()=>{splash.remove();const first=$('homePage');if(first){first.classList.remove('hide');first.classList.add('page-enter');}},820);
+});
 Promise.resolve().then(()=>init()).finally(()=>{
-  const splash=document.getElementById('v12Splash');
-  const wait=Math.max(0,1150-(performance.now()-splashStartedAt));
-  setTimeout(()=>{if(splash){splash.classList.add('splash-out');setTimeout(()=>splash.remove(),780);}},wait);
+  forumReady=true;
+  startForumBtn.disabled=false;
+  startForumBtn.querySelector('span').textContent='进入校园论坛';
+  introFootnote.textContent='准备好了 · 点击进入社区';
 });
 </script></body>
 </html>
