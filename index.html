@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#2563eb">
-<title>思茅一中校园论坛测试版 v1.1.1</title>
+<title>思茅一中校园论坛测试版 v1.2</title>
 <style>
 :root{
   --primary:#2563eb;--primary-dark:#1d4ed8;--primary-soft:#eff6ff;
@@ -13,9 +13,8 @@
   --radius:16px;--shadow:0 1px 3px rgba(15,23,42,.06),0 8px 24px rgba(15,23,42,.06);
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:"PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif;-webkit-tap-highlight-color:transparent}
-html{scroll-behavior:smooth}
-html.invite-locked,html.invite-locked body{overflow:hidden!important;width:100%;height:100%;}
-body.invite-locked{position:fixed!important;left:0;right:0;top:0;width:100%;overflow:hidden!important;touch-action:none;}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+
 body{background:linear-gradient(180deg,#f8fafc,#eef2f7);color:var(--text);min-height:100vh;line-height:1.6;padding-bottom:env(safe-area-inset-bottom)}
 button,input,textarea,select{font:inherit}
 button{cursor:pointer}
@@ -133,16 +132,40 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px 20px}
 }
 </style>
 <style>
-#v11InviteGate{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;min-height:100dvh;background:#f1f5f9;display:flex;align-items:center;justify-content:center;z-index:2147483647;overflow:hidden;overscroll-behavior:none;}
-#v11InviteGate *{touch-action:manipulation;}
-.v11NoticeCard{margin:16px auto;padding:16px;max-width:1200px;background:#fff;border-radius:16px;border:1px solid #e2e8f0}
-.v11InviteCard{background:#fff;padding:30px;border-radius:20px;width:320px;text-align:center}
-.v11InviteCard input{width:100%;padding:12px;margin:15px 0;box-sizing:border-box;border:1px solid #ddd;border-radius:10px}
-.v11InviteCard button{width:100%;padding:12px;border:0;border-radius:10px;background:#2563eb;color:#fff}
-#v11InviteMsg{color:#ef4444;margin-top:10px}
-.v11NoticeCard{margin:16px auto;padding:16px;max-width:1200px;background:#fff;border-radius:16px;border:1px solid #e2e8f0}
+/* v1.2 smooth motion system */
+:root{--ease-out:cubic-bezier(.22,1,.36,1);--ease-soft:cubic-bezier(.2,.75,.25,1)}
+body{animation:page-arrive .55s var(--ease-out) both}
+.card,.my-page,.notice,.sidebar,.modal,.side-item,.tab,.mini,.action,.sort-btn,.upload,.primary-btn,.comment-send,.user-chip{transition:transform .28s var(--ease-out),box-shadow .32s var(--ease-out),background-color .25s ease,border-color .25s ease,color .2s ease,opacity .25s ease}
+.card:hover{transform:translateY(-2px)}
+button:active,.upload:active{transform:scale(.975)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid rgba(37,99,235,.22);outline-offset:2px}
+.post-card{animation:card-arrive .42s var(--ease-out) both}
+.post-card:nth-child(2){animation-delay:.035s}.post-card:nth-child(3){animation-delay:.07s}.post-card:nth-child(4){animation-delay:.105s}
+.modal-mask{animation:mask-in .22s ease both}.modal{animation:modal-in .32s var(--ease-out) both}
+.v12-splash{position:fixed;inset:0;z-index:2147483646;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 20%,#dbeafe 0%,#eff6ff 38%,#f8fafc 100%);opacity:1;visibility:visible;transition:opacity .72s var(--ease-out),visibility .72s ease;overflow:hidden}
+.v12-splash.splash-out{opacity:0;visibility:hidden;pointer-events:none}
+.v12-splash-inner{width:min(440px,100%);text-align:center;animation:splash-rise .8s var(--ease-out) both}
+.v12-brand-mark{width:76px;height:76px;margin:0 auto 22px;border-radius:25px;display:grid;place-items:center;color:#fff;font-size:34px;font-weight:900;background:linear-gradient(145deg,#60a5fa,#1d4ed8);box-shadow:0 18px 40px rgba(37,99,235,.28);animation:mark-float 3s ease-in-out infinite}
+.v12-splash h1{font-size:clamp(25px,6vw,34px);letter-spacing:.02em;font-weight:900;color:#0f172a}
+.v12-splash .splash-subtitle{margin-top:9px;color:#475569;font-size:14px;letter-spacing:.12em}
+.v12-splash .splash-desc{max-width:330px;margin:22px auto 27px;color:#64748b;font-size:14px;line-height:1.9}
+.v12-progress{height:4px;width:min(220px,75%);margin:0 auto;border-radius:99px;background:rgba(37,99,235,.12);overflow:hidden}
+.v12-progress:after{content:"";display:block;width:42%;height:100%;border-radius:99px;background:linear-gradient(90deg,#60a5fa,#1d4ed8);animation:progress-sweep 1.35s ease-in-out infinite}
+.v12-loading{margin-top:13px;color:#94a3b8;font-size:11px;letter-spacing:.16em}
+.contact-card{display:flex;gap:12px;align-items:flex-start;margin:0 0 16px;padding:15px 16px;border:1px solid #dbeafe;border-radius:14px;background:linear-gradient(135deg,#eff6ff,#fff)}
+.contact-icon{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border-radius:12px;background:#dbeafe;font-size:19px}
+.contact-card h3{font-size:14px;margin:0 0 3px;color:#1e40af}.contact-card p{font-size:13px;color:#475569;line-height:1.7}.contact-card a{color:#2563eb;font-weight:700;text-decoration:none;overflow-wrap:anywhere}.contact-card a:hover{text-decoration:underline}
+@keyframes page-arrive{from{opacity:.82}to{opacity:1}}
+@keyframes card-arrive{from{opacity:0;transform:translateY(12px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes mask-in{from{opacity:0}to{opacity:1}}
+@keyframes modal-in{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes splash-rise{from{opacity:0;transform:translateY(18px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes mark-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes progress-sweep{0%{transform:translateX(-120%)}100%{transform:translateX(300%)}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+@media(max-width:768px){.contact-card{margin-bottom:13px}.v12-splash .splash-desc{margin:18px auto 24px}}
 </style></head>
-<body><div id="v11InviteGate"><div class="v11InviteCard"><h2>🏫 思茅一中校园论坛</h2><p>该论坛为内部测试版本<br>如需访问请输入邀请码</p><input id="v11InviteInput" placeholder="请输入邀请码"><button id="v11InviteBtn">进入论坛</button><div id="v11InviteMsg"></div></div></div>
+<body><div class="v12-splash" id="v12Splash" aria-label="论坛启动页"><div class="v12-splash-inner"><div class="v12-brand-mark">思</div><h1>思茅一中校园论坛</h1><div class="splash-subtitle">文庙论坛 · 校园交流空间</div><p class="splash-desc">分享校园新鲜事，记录青春日常。<br>在这里友善交流、彼此倾听，让每一个校园故事都值得被看见。</p><div class="v12-progress"></div><div class="v12-loading">正在为你准备校园动态…</div></div></div>
 
 <header>
   <div class="nav">
@@ -229,6 +252,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px 20px}
           <button class="tab" data-tab="likes">❤️ 我的点赞</button>
           <button class="tab" data-tab="favorites">⭐ 我的收藏</button>
         </div>
+        <div class="contact-card"><div class="contact-icon">✉️</div><div><h3>使用帮助与联系</h3><p>如在使用中遇到问题，请联系该邮箱：<br><a href="mailto:easybox71@Outlook.com">easybox71@Outlook.com</a></p></div></div>
         <div id="myContentList"></div>
       </div>
     </section>
@@ -505,71 +529,11 @@ function renderMyPage(){
   box.querySelectorAll('[data-myact="delete"]').forEach(b=>b.onclick=()=>deletePost(b.dataset.id));box.querySelectorAll('[data-myact="delcomment"]').forEach(b=>b.onclick=()=>deleteComment(b.dataset.id));box.querySelectorAll('[data-myact="unlike"]').forEach(b=>b.onclick=()=>toggleLike(b.dataset.id));box.querySelectorAll('[data-myact="unfav"]').forEach(b=>b.onclick=()=>toggleFav(b.dataset.id));
 }
 
-</script>
-<script>
-(function(){
-  const KEY="simao_forum_v11_invite", CODE="6690";
-  const gate=document.getElementById("v11InviteGate");
-  const input=document.getElementById("v11InviteInput");
-  const btn=document.getElementById("v11InviteBtn");
-  const msg=document.getElementById("v11InviteMsg");
-  let lockedScrollY=0;
-  let unlocked=false;
-
-  function lockPage(){
-    lockedScrollY=window.scrollY||window.pageYOffset||0;
-    document.documentElement.classList.add("invite-locked");
-    document.body.classList.add("invite-locked");
-    document.body.style.top=(-lockedScrollY)+"px";
-    if(gate) gate.style.display="flex";
-  }
-
-  function unlockPage(){
-    if(unlocked) return;
-    unlocked=true;
-    localStorage.setItem(KEY,"ok");
-    if(gate) gate.style.display="none";
-    document.documentElement.classList.remove("invite-locked");
-    document.body.classList.remove("invite-locked");
-    document.body.style.top="";
-    window.scrollTo(0,lockedScrollY);
-    if(typeof init==="function") init();
-  }
-
-  function verify(){
-    if(input.value.trim()===CODE){
-      msg.textContent="✅ 验证成功，正在进入论坛…";
-      msg.style.color="#16a34a";
-      unlockPage();
-    }else{
-      msg.textContent="❌ 邀请码错误，请重新输入";
-      msg.style.color="#ef4444";
-      input.focus();
-      input.select();
-    }
-  }
-
-  // 已验证用户直接进入；未验证用户从页面加载开始就锁死。
-  if(localStorage.getItem(KEY)==="ok") unlockPage();
-  else {
-    lockPage();
-    if(input) input.focus();
-  }
-
-  if(btn) btn.addEventListener("click",verify);
-  if(input) input.addEventListener("keydown",e=>{if(e.key==="Enter") verify();});
-
-  // 防止触摸/滚轮事件造成页面穿透。
-  ["wheel","touchmove"].forEach(type=>{
-    document.addEventListener(type,e=>{
-      if(!unlocked && gate && gate.style.display!=="none") e.preventDefault();
-    },{passive:false,capture:true});
-  });
-  document.addEventListener("keydown",e=>{
-    if(!unlocked && ["PageDown","PageUp","Home","End","ArrowDown","ArrowUp","Space"].includes(e.code)){
-      e.preventDefault();
-    }
-  },{capture:true});
-})();
+const splashStartedAt=performance.now();
+Promise.resolve().then(()=>init()).finally(()=>{
+  const splash=document.getElementById('v12Splash');
+  const wait=Math.max(0,1150-(performance.now()-splashStartedAt));
+  setTimeout(()=>{if(splash){splash.classList.add('splash-out');setTimeout(()=>splash.remove(),780);}},wait);
+});
 </script></body>
 </html>
