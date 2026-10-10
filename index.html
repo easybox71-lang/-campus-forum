@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#2563eb">
-<title>思茅一中校园论坛测试版 v1.5</title>
+<title>思茅一中校园论坛测试版 v1.6</title>
 <style>
 :root{
   --primary:#2563eb;--primary-dark:#1d4ed8;--primary-soft:#eff6ff;
@@ -263,6 +263,45 @@ header{background:rgba(248,251,255,.62);backdrop-filter:blur(30px) saturate(185%
 @media(max-height:700px) and (min-width:761px){.tour-shell{height:calc(100dvh - 20px);min-height:0;padding:15px 24px}.tour-art{min-height:210px}.tour-copy h1{font-size:34px}.tour-copy p{margin-top:12px;line-height:1.7}.tour-kicker{margin-bottom:10px}.tour-tip{margin-top:13px}.tour-dots{margin:2px 0 9px}.tour-footnote{margin-top:7px}}
 @media(prefers-reduced-motion:reduce){.boot-logo,.boot-logo:before,.boot-logo:after,.boot-loader i,.boot-status,.tour-art *,.tour-art:before,.v12-splash:after{animation:none!important}.tour-track{transition:none!important}}
 </style>
+
+<style id="v16-premium-ui">
+:root{--ease-premium:cubic-bezier(.2,.75,.25,1);--ease-spring:cubic-bezier(.2,1,.3,1);--surface-glass:rgba(255,255,255,.78);--line-soft:rgba(148,163,184,.18);--shadow-soft:0 2px 6px rgba(15,23,42,.025),0 12px 32px rgba(30,64,175,.045)}
+html{scroll-behavior:smooth;scrollbar-gutter:stable}
+body{background:radial-gradient(ellipse at 8% 0%,rgba(219,234,254,.44),transparent 36%),linear-gradient(180deg,#f8faff 0%,#f3f6fb 48%,#f7f9fc 100%);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+header{background:rgba(250,252,255,.82);border-bottom-color:rgba(255,255,255,.86);box-shadow:0 4px 22px rgba(15,23,42,.035);backdrop-filter:blur(22px) saturate(155%);-webkit-backdrop-filter:blur(22px) saturate(155%)}
+.nav{min-height:66px}.logo{letter-spacing:-.025em}.logo-mark{border-radius:12px;box-shadow:0 5px 13px rgba(37,99,235,.19)}
+.container{gap:22px}.sidebar,.card,.my-page{border-color:var(--line-soft);box-shadow:var(--shadow-soft)}
+.sidebar{background:rgba(255,255,255,.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.side-item{position:relative;transition:background-color .22s ease,color .22s ease,transform .32s var(--ease-spring)}.side-item:active{transform:scale(.985)}.side-item.active{background:linear-gradient(110deg,rgba(219,234,254,.76),rgba(239,246,255,.92));box-shadow:inset 0 0 0 1px rgba(147,197,253,.22)}
+.card,.my-page{border-radius:20px;background:rgba(255,255,255,.94);box-shadow:0 1px 2px rgba(15,23,42,.025),0 8px 26px rgba(30,64,175,.035);transition:box-shadow .24s ease,border-color .24s ease,transform .24s var(--ease-spring)}
+/* Avoid hover lift on large content cards; it can trigger extra paint on touch devices. */
+.post-card:hover,.card:hover{transform:none;box-shadow:0 4px 18px rgba(30,64,175,.055);border-color:rgba(191,219,254,.72)}
+.publish-card{background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(249,251,255,.94));border-color:rgba(191,219,254,.5)}
+textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-input{transition:border-color .2s ease,box-shadow .2s ease,background-color .2s ease}
+.primary-btn,.comment-send{background:linear-gradient(135deg,#3b82f6,#2563eb 62%,#1d4ed8);box-shadow:0 5px 14px rgba(37,99,235,.16);transition:transform .22s var(--ease-spring),box-shadow .22s ease,filter .22s ease}.primary-btn:hover,.comment-send:hover{box-shadow:0 7px 18px rgba(37,99,235,.23);filter:saturate(1.05)}
+.action{transition:background-color .18s ease,color .18s ease,transform .22s var(--ease-spring)}.action:active,.mini:active,.sort-btn:active,.tab:active{transform:scale(.96)}
+.post-head .avatar,.comment-avatar{box-shadow:inset 0 0 0 1px rgba(255,255,255,.7)}
+.image-item{background:#edf2f8;contain:paint}.image-item img{transition:transform .35s var(--ease-spring)}
+/* Animate only opacity/transform; avoid expensive blur filters during page changes. */
+.main-box{view-transition-name:forum-content;contain:layout style}
+::view-transition-group(forum-content){animation-duration:.38s;animation-timing-function:var(--ease-premium)}
+::view-transition-old(forum-content){animation:premium-out .16s ease both}
+::view-transition-new(forum-content){animation:premium-in .34s var(--ease-premium) both}
+@keyframes premium-out{to{opacity:0;transform:translateY(3px) scale(.998)}}
+@keyframes premium-in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.page-enter{animation:premium-in .34s var(--ease-premium) both;will-change:opacity,transform}
+.page-exit{animation:premium-out .16s ease both;pointer-events:none}
+.post-card{animation:feed-item-in .32s var(--ease-premium) both;will-change:opacity,transform}
+.post-card:nth-child(2){animation-delay:.025s}.post-card:nth-child(3){animation-delay:.05s}.post-card:nth-child(4){animation-delay:.075s}.post-card:nth-child(5){animation-delay:.1s}.post-card:nth-child(n+6){animation-delay:.12s}
+@keyframes feed-item-in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.mobile-nav{background:rgba(250,252,255,.88)!important;backdrop-filter:blur(22px) saturate(155%)!important;-webkit-backdrop-filter:blur(22px) saturate(155%)!important;border-top-color:rgba(255,255,255,.9)!important;box-shadow:0 -5px 20px rgba(15,23,42,.035)}
+.mobile-nav button{min-width:72px;border-radius:14px;transition:color .2s ease,background-color .2s ease,transform .2s var(--ease-spring)}.mobile-nav button.active{background:rgba(219,234,254,.55)}
+:focus-visible{outline-color:rgba(59,130,246,.58)!important;outline-offset:3px}
+@media(min-width:769px){.container{padding-left:24px;padding-right:24px}.sidebar{border-radius:20px}.post-card{margin-bottom:14px}}
+@media(max-width:768px){.container{padding-left:12px;padding-right:12px;gap:12px}.card,.my-page{border-radius:17px}.sidebar{background:rgba(255,255,255,.82);border-radius:15px;scrollbar-width:none}.sidebar::-webkit-scrollbar{display:none}.post-card{margin-bottom:12px}.mobile-nav button{padding-left:14px;padding-right:14px}}
+@media(hover:none){.card:hover,.post-card:hover{transform:none;box-shadow:var(--shadow-soft)}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}::view-transition-old(forum-content),::view-transition-new(forum-content){animation:none!important}}
+</style>
 </head>
 <body><div class="v12-splash" id="v12Splash" aria-label="思茅一中校园论坛启动与使用引导">
   <div class="intro-orb orb-one"></div><div class="intro-orb orb-two"></div>
@@ -383,7 +422,7 @@ header{background:rgba(248,251,255,.62);backdrop-filter:blur(30px) saturate(185%
           <button class="tab" data-tab="likes">❤️ 我的点赞</button>
           <button class="tab" data-tab="favorites">⭐ 我的收藏</button>
         </div>
-        <div class="contact-card"><div class="contact-icon">✉️</div><div><h3>使用帮助与联系</h3><p>如在使用中遇到问题，请联系该邮箱：<br><a href="mailto:easybox71@Outlook.com">easybox71@Outlook.com</a></p></div></div>
+        <div class="contact-card"><div class="contact-icon">✉️</div><div><h3>使用帮助与联系</h3><p>如在使用中遇到问题，请联系该邮箱：<br><a href="mailto:easybox71@Outlook.com">easybox71@Outlook.com</a></p><button class="mini" id="replayTourBtn" style="margin-top:12px">✨ 重新查看新手引导</button></div></div>
         <div id="myContentList"></div>
       </div>
     </section>
@@ -539,11 +578,8 @@ async function createOrLoadProfile(){
   if(!currentProfile) throw new Error('profile 不存在：当前匿名用户没有对应的 profiles 记录');
 }
 async function loadAllData(){
-  await loadProfiles();
-  await loadPosts();
-  await loadComments();
-  await loadLikes();
-  await loadFavorites();
+  // Independent Supabase reads run concurrently instead of serially waiting for five round trips.
+  await Promise.all([loadProfiles(),loadPosts(),loadComments(),loadLikes(),loadFavorites()]);
 }
 async function loadProfiles(){const {data,error}=await client.from('profiles').select('id,nickname,avatar,is_admin');if(error){error.stage='读取 profiles';throw error;}allProfiles=data||[];currentProfile=allProfiles.find(p=>p.id===currentUser.id)||currentProfile;}
 async function loadPosts(){const {data,error}=await client.from('posts').select('*').order('created_at',{ascending:false});if(error){error.stage='读取 posts';throw error;}posts=data||[];}
@@ -598,13 +634,29 @@ async function publishPost(){
   if(!content){toast('请输入文字内容');return}
   $('publishBtn').disabled=true;
   try{
-    const {error}=await client.from('posts').insert({author_id:currentUser.id,category,content:content||'',images:pendingPostImages,anonymous});
+    const images=[...pendingPostImages];
+    const {data,error}=await client.from('posts').insert({author_id:currentUser.id,category,content:content||'',images,anonymous}).select('*').single();
     if(error)throw error;
-    $('textVal').value='';$('charCount').textContent='0 / 2000';$('anonCheck').checked=false;pendingPostImages=[];renderPostPreview();await loadAllData();renderPosts();toast('发布成功');
+    $('textVal').value='';$('charCount').textContent='0 / 2000';$('anonCheck').checked=false;pendingPostImages=[];renderPostPreview();
+    // Show the newly published post immediately; refresh supporting data in parallel afterward.
+    if(data){posts=[data,...posts.filter(p=>p.id!==data.id)];currentCategory='all';searchText='';$('searchInput').value='';document.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('active',x.dataset.cat==='all'));}
+    invalidateStats();renderPosts();toast('发布成功');
+    loadAllData().then(()=>{invalidateStats();if(activePage==='home')renderPosts();if(activePage==='my')renderMyPage()}).catch(e=>console.warn('后台刷新帖子数据失败',e));
   }catch(e){console.error(e);toast('发布失败：'+e.message)}finally{$('publishBtn').disabled=false}
 }
 
-function postStats(id){const pLikes=likes.filter(x=>x.post_id===id).length,pFav=favorites.filter(x=>x.post_id===id).length,pCom=comments.filter(x=>x.post_id===id).length;return {likes:pLikes,favorites:pFav,comments:pCom,score:pLikes+pFav+pCom};}
+let statsCache=null;
+function getStatsCache(){
+  if(statsCache)return statsCache;
+  const map=new Map();
+  for(const p of posts)map.set(p.id,{likes:0,favorites:0,comments:0,score:0});
+  for(const x of likes){const v=map.get(x.post_id);if(v){v.likes++;v.score++;}}
+  for(const x of favorites){const v=map.get(x.post_id);if(v){v.favorites++;v.score++;}}
+  for(const x of comments){const v=map.get(x.post_id);if(v){v.comments++;v.score++;}}
+  statsCache=map;return map;
+}
+function invalidateStats(){statsCache=null;}
+function postStats(id){return getStatsCache().get(id)||{likes:0,favorites:0,comments:0,score:0};}
 function isLiked(id){return likes.some(x=>x.post_id===id&&x.user_id===currentUser.id)}
 function isFav(id){return favorites.some(x=>x.post_id===id&&x.user_id===currentUser.id)}
 function canDeletePost(p){return p.author_id===currentUser.id||!!currentProfile?.is_admin}
@@ -617,6 +669,7 @@ function filteredPosts(){
   return arr;
 }
 function renderPosts(){
+  invalidateStats();
   const names={all:'全部动态',bagua:'校园八卦',love:'表白墙',news:'校园新鲜事',校园:'校园',学习:'学习',生活:'生活',吐槽:'吐槽',求助:'求助','失物招领':'失物招领'};$('feedTitle').textContent=names[currentCategory]||'全部动态';
   const arr=filteredPosts();$('postList').innerHTML=arr.length?arr.map(postHtml).join(''):'<div class="empty"><span class="emoji">📝</span>这里还没有动态</div>';bindFeed();
 }
@@ -652,13 +705,13 @@ function switchPage(page){
   const home=page==='home';
   const next=home?$('homePage'):$('myPage');
   const current=activePage==='home'?$('homePage'):$('myPage');
-  if(page===activePage){if(!home)renderMyPage();else renderPosts();return;}
+  // Switching views should not rebuild the feed: render only when data changes.
+  if(page===activePage)return;
   const updatePage=()=>{
     current.classList.add('hide');current.classList.remove('page-exit','page-enter');
     next.classList.remove('hide','page-exit','page-enter');
     activePage=page;
     document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===page));
-    if(!home)renderMyPage();else renderPosts();
   };
   if(document.startViewTransition){
     try{document.startViewTransition(updatePage);}
@@ -701,13 +754,18 @@ function updateTour(index){
 }
 function finishTour(){
   try{localStorage.setItem(TOUR_KEY,'1')}catch(e){}
-  splash.classList.add('splash-out');document.body.classList.add('forum-entered');
-  window.setTimeout(()=>{splash.remove();const first=$('homePage');if(first){first.classList.remove('hide');first.classList.add('page-enter')}},720);
+  tourShell.classList.add('hide');splash.classList.add('splash-out');document.body.classList.add('forum-entered');
+  window.setTimeout(()=>{splash.classList.add('hide');const first=$('homePage');if(first){first.classList.remove('hide');first.classList.add('page-enter')}},720);
+}
+function replayTour(){
+  splash.classList.remove('hide','splash-out');tourShell.classList.remove('hide');updateTour(0);
+  document.body.classList.remove('forum-entered');
 }
 tourNext.addEventListener('click',()=>{if(!forumReady)return;if(tourIndex<3)updateTour(tourIndex+1);else finishTour()});
 tourPrev.addEventListener('click',()=>updateTour(tourIndex-1));
 tourSkip.addEventListener('click',()=>{if(forumReady)finishTour()});
 tourDots.forEach((dot)=>dot.addEventListener('click',()=>updateTour(Number(dot.dataset.dot))));
+document.addEventListener('click',e=>{if(e.target.closest('#replayTourBtn'))replayTour()});
 tourViewport.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;tourTouchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};tourTouchLast=tourTouchStart},{passive:true});
 tourViewport.addEventListener('touchmove',e=>{if(!tourTouchStart||!e.touches.length)return;tourTouchLast={x:e.touches[0].clientX,y:e.touches[0].clientY}},{passive:true});
 tourViewport.addEventListener('touchend',()=>{if(!tourTouchStart||!tourTouchLast)return;const dx=tourTouchLast.x-tourTouchStart.x,dy=tourTouchLast.y-tourTouchStart.y;if(Math.abs(dx)>42&&Math.abs(dx)>Math.abs(dy)*1.15){if(dx<0&&tourIndex<3)updateTour(tourIndex+1);else if(dx>0&&tourIndex>0)updateTour(tourIndex-1)}tourTouchStart=tourTouchLast=null},{passive:true});
@@ -724,7 +782,7 @@ function showFirstRunExperience(){
     },420);
   },wait);
 }
-function finishReturningVisit(){splash.classList.add('splash-out');document.body.classList.add('forum-entered');window.setTimeout(()=>{splash.remove();const first=$('homePage');if(first){first.classList.remove('hide');first.classList.add('page-enter')}},560)}
+function finishReturningVisit(){splash.classList.add('splash-out');document.body.classList.add('forum-entered');window.setTimeout(()=>{splash.classList.add('hide');const first=$('homePage');if(first){first.classList.remove('hide');first.classList.add('page-enter')}if(currentUser)renderPosts()},560)}
 updateTour(0);
 Promise.resolve().then(()=>init()).catch(e=>{bootStatus.textContent='连接遇到一点问题，正在尝试恢复…';console.error(e)}).finally(()=>{
   forumReady=true;
