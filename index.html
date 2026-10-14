@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#2563eb">
-<title>思茅一中校园论坛测试版 v1.6.3</title>
+<title>思茅一中校园论坛测试版 v1.6.4（连接稳定性修复）</title>
 <style>
 :root{
   --primary:#2563eb;--primary-dark:#1d4ed8;--primary-soft:#eff6ff;
@@ -480,7 +480,7 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
 <script>
 const SUPABASE_URL='https://pjfwkylyeiaymwajtztt.supabase.co';
 const SUPABASE_KEY='sb_publishable_WfdLfZvV9z4eccE30RL0Ww_3Bkjmsl4';
-const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const client=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY,{auth:{autoRefreshToken:true,persistSession:true}}) || null;
 
 let currentUser=null,currentProfile=null,allProfiles=[];
 let posts=[],comments=[],likes=[],favorites=[];
@@ -555,19 +555,19 @@ function showDebugError(stage,e){
   }
   debugBox.innerHTML='<b style="color:#dc2626">论坛连接失败</b><div style="margin-top:6px"><b>出错位置：</b>'+esc(stage)+'</div><div style="margin-top:4px;word-break:break-word"><b>详细信息：</b>'+esc(msg)+'</div><div style="margin-top:8px;color:#64748b;font-size:12px">请把这段“详细信息”截图发给我，我就能继续定位。页面样式和数据库数据不会因此改变。</div>';
 }
-async function retryable(fn,label,retries=2){
+function withTimeout(task,ms,label){
+  return Promise.race([Promise.resolve().then(task),new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+'超时（'+Math.round(ms/1000)+'秒），请检查网络或稍后重试')),ms))]);
+}
+async function retryable(fn,label,retries=1,timeout=9500){
   let last;
   for(let i=0;i<=retries;i++){
-    try{return await fn();}
+    try{return await withTimeout(fn,timeout,label);}
     catch(e){
       last=e;
-      if(i<retries) await new Promise(r=>setTimeout(r,700*(i+1)));
+      if(i<retries)await new Promise(r=>setTimeout(r,450*(i+1)));
     }
   }
-  const e=new Error(label+'：'+errorText(last));
-  e.original=last;
-  e.stage=label;
-  throw e;
+  const e=new Error(label+'：'+errorText(last));e.original=last;e.stage=label;throw e;
 }
 async function getOrCreateSession(){
   const result=await client.auth.getSession();
@@ -581,32 +581,37 @@ async function getOrCreateSession(){
   if(!session?.user)throw new Error('没有获得有效的登录 Session');
   return session;
 }
+let eventsBound=false,timeTimer=null;
 async function init(){
+  if(!client)throw Object.assign(new Error('Supabase 依赖脚本加载失败，请尝试更换网络或浏览器'),{stage:'加载 Supabase SDK'});
+  // Only authentication and posts are required to enter the forum.
+  let session=await retryable(getOrCreateSession,'匿名登录 / Session',1,9000);
+  currentUser=session.user;
   try{
-    let session=await retryable(getOrCreateSession,'匿名登录 / Session',2);
-    currentUser=session.user;
-    try{
-      await retryable(createOrLoadProfile,'读取个人资料',2);
-    }catch(profileError){
-      const raw=profileError.original||profileError;
-      const status=raw?.status||raw?.code;
-      if(!initRetryUsed && (status===401||status===403||String(raw?.code||'').toLowerCase().includes('jwt'))){
-        initRetryUsed=true;
-        await client.auth.signOut({scope:'local'});
-        session=await retryable(getOrCreateSession,'重新匿名登录',2);
-        currentUser=session.user;
-        await retryable(createOrLoadProfile,'重新读取个人资料',2);
-      }else throw profileError;
+    await retryable(createOrLoadProfile,'读取个人资料',0,7000);
+  }catch(profileError){
+    const raw=profileError.original||profileError;
+    const status=Number(raw?.status||0);
+    if(!initRetryUsed && (status===401||status===403||String(raw?.code||'').toLowerCase().includes('jwt'))){
+      initRetryUsed=true;
+      await retryable(()=>client.auth.signOut({scope:'local'}),'清理失效登录',0,5000);
+      session=await retryable(getOrCreateSession,'重新匿名登录',1,9000);
+      currentUser=session.user;
+      await retryable(createOrLoadProfile,'重新读取个人资料',0,7000);
+    }else{
+      console.warn('个人资料暂时无法读取，先使用默认昵称进入',profileError);
+      currentProfile={id:currentUser.id,nickname:'同学',avatar:'😀',is_admin:false};
     }
-    await retryable(loadAllData,'加载论坛数据',2);
-    bindEvents();
-    updateUserUI();
-    renderPosts();
-    renderMyPage();
-    setInterval(relativeRefresh,30000);
-  }catch(e){
-    showDebugError(e.stage||'初始化论坛',e.original||e);
   }
+  await retryable(loadPosts,'读取帖子',1,9000);
+  if(!eventsBound){bindEvents();eventsBound=true;}
+  updateUserUI();renderPosts();renderMyPage();
+  if(!timeTimer)timeTimer=setInterval(relativeRefresh,30000);
+  // Nonessential tables must not hold the splash screen hostage.
+  void Promise.allSettled([loadProfiles(),loadComments(),loadLikes(),loadFavorites()]).then(results=>{
+    results.forEach((r,i)=>{if(r.status==='rejected')console.warn('附属数据加载失败', ['profiles','comments','likes','favorites'][i],r.reason)});
+    if(results.some(r=>r.status==='fulfilled')){updateUserUI();renderPosts();renderMyPage();}
+  });
 }
 
 async function createOrLoadProfile(){
@@ -803,7 +808,7 @@ tourNext.addEventListener('click',()=>{if(!forumReady)return;if(tourIndex<3)upda
 tourPrev.addEventListener('click',()=>updateTour(tourIndex-1));
 tourSkip.addEventListener('click',()=>{if(forumReady)finishTour()});
 tourDots.forEach((dot)=>dot.addEventListener('click',()=>updateTour(Number(dot.dataset.dot))));
-document.addEventListener('click',e=>{if(e.target.closest('#replayTourBtn'))replayTour()});
+
 tourViewport.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;tourTouchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};tourTouchLast=tourTouchStart},{passive:true});
 tourViewport.addEventListener('touchmove',e=>{if(!tourTouchStart||!e.touches.length)return;tourTouchLast={x:e.touches[0].clientX,y:e.touches[0].clientY}},{passive:true});
 tourViewport.addEventListener('touchend',()=>{if(!tourTouchStart||!tourTouchLast)return;const dx=tourTouchLast.x-tourTouchStart.x,dy=tourTouchLast.y-tourTouchStart.y;if(Math.abs(dx)>42&&Math.abs(dx)>Math.abs(dy)*1.15){if(dx<0&&tourIndex<3)updateTour(tourIndex+1);else if(dx>0&&tourIndex>0)updateTour(tourIndex-1)}tourTouchStart=tourTouchLast=null},{passive:true});
@@ -822,10 +827,31 @@ function showFirstRunExperience(){
 }
 function finishReturningVisit(){splash.classList.add('splash-out');document.body.classList.add('forum-entered');window.setTimeout(()=>{splash.classList.add('hide');const first=$('homePage');if(first){first.classList.remove('hide');first.classList.add('page-enter')}if(currentUser)renderPosts()},560)}
 updateTour(0);
-Promise.resolve().then(()=>init()).catch(e=>{bootStatus.textContent='连接遇到一点问题，正在尝试恢复…';console.error(e)}).finally(()=>{
-  forumReady=true;
-  bootStatus.textContent='社区准备就绪';
-  showFirstRunExperience();
-});
+let forumStarting=false;
+async function startForum(){
+  if(forumStarting)return;
+  forumStarting=true;
+  forumReady=false;
+  bootScreen.classList.remove('hide','boot-out');
+  bootStatus.textContent='正在连接校园社区…';
+  document.getElementById('forumRetry')?.remove();
+  try{
+    await init();
+    forumReady=true;
+    if(debugBox){debugBox.remove();debugBox=null;}
+    bootStatus.textContent='社区准备就绪';
+    showFirstRunExperience();
+  }catch(e){
+    console.error('论坛启动失败',e);
+    showDebugError(e.stage||'论坛启动',e.original||e);
+    bootStatus.textContent='连接失败，请点击下方按钮重试';
+    const btn=document.createElement('button');
+    btn.id='forumRetry';btn.type='button';btn.textContent='重新连接论坛';
+    btn.style.cssText='margin-top:18px;border:0;border-radius:13px;padding:12px 22px;background:#2563eb;color:#fff;font-size:14px;font-weight:700;cursor:pointer';
+    btn.addEventListener('click',startForum);
+    bootScreen.appendChild(btn);
+  }finally{forumStarting=false;}
+}
+startForum();
 </script></body>
 </html>
