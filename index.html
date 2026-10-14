@@ -476,11 +476,36 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
 
 <div class="lightbox hide" id="lightbox"><img id="lightboxImg" alt=""></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- SDK 通过带超时的备用 CDN 加载，避免阻塞整页 HTML -->
 <script>
 const SUPABASE_URL='https://pjfwkylyeiaymwajtztt.supabase.co';
 const SUPABASE_KEY='sb_publishable_WfdLfZvV9z4eccE30RL0Ww_3Bkjmsl4';
-const client=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY,{auth:{autoRefreshToken:true,persistSession:true}}) || null;
+let client=null;
+async function ensureSupabaseSDK(){
+  if(window.supabase?.createClient)return;
+  const sources=[
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js',
+    'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js'
+  ];
+  for(const src of sources){
+    if(window.supabase?.createClient)return;
+    try{
+      await new Promise((resolve,reject)=>{
+        const script=document.createElement('script');script.src=src;script.async=true;
+        let done=false;
+        const finish=(err)=>{if(done)return;done=true;clearTimeout(timer);script.onload=null;script.onerror=null;if(err){script.remove();reject(err)}else resolve()};
+        const timer=setTimeout(()=>finish(new Error('SDK CDN 加载超时')),4500);
+        script.onload=()=>finish();script.onerror=()=>finish(new Error('SDK CDN 无法访问'));
+        document.head.appendChild(script);
+      });
+    }catch(e){console.warn('Supabase SDK 备用线路:',src,e.message)}
+  }
+  if(!window.supabase?.createClient)throw Object.assign(new Error('无法加载 Supabase SDK：两个 CDN 均连接失败。请尝试切换 Wi-Fi/移动网络或浏览器。'),{stage:'加载 Supabase SDK'});
+}
+async function prepareClient(){
+  await ensureSupabaseSDK();
+  if(!client)client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:false}});
+}
 
 let currentUser=null,currentProfile=null,allProfiles=[];
 let posts=[],comments=[],likes=[],favorites=[];
@@ -583,7 +608,7 @@ async function getOrCreateSession(){
 }
 let eventsBound=false,timeTimer=null;
 async function init(){
-  if(!client)throw Object.assign(new Error('Supabase 依赖脚本加载失败，请尝试更换网络或浏览器'),{stage:'加载 Supabase SDK'});
+  await prepareClient();
   // Only authentication and posts are required to enter the forum.
   let session=await retryable(getOrCreateSession,'匿名登录 / Session',1,9000);
   currentUser=session.user;
@@ -608,10 +633,9 @@ async function init(){
   updateUserUI();renderPosts();renderMyPage();
   if(!timeTimer)timeTimer=setInterval(relativeRefresh,30000);
   // Nonessential tables must not hold the splash screen hostage.
-  void Promise.allSettled([loadProfiles(),loadComments(),loadLikes(),loadFavorites()]).then(results=>{
-    results.forEach((r,i)=>{if(r.status==='rejected')console.warn('附属数据加载失败', ['profiles','comments','likes','favorites'][i],r.reason)});
-    if(results.some(r=>r.status==='fulfilled')){updateUserUI();renderPosts();renderMyPage();}
-  });
+  for (const [name, task] of [['profiles',loadProfiles],['comments',loadComments],['likes',loadLikes],['favorites',loadFavorites]]) {
+    Promise.resolve().then(task).then(()=>{updateUserUI();if(activePage==='home')renderPosts();if(activePage==='my')renderMyPage();}).catch(e=>console.warn('附属数据加载失败',name,e));
+  }
 }
 
 async function createOrLoadProfile(){
@@ -827,31 +851,55 @@ function showFirstRunExperience(){
 }
 function finishReturningVisit(){splash.classList.add('splash-out');document.body.classList.add('forum-entered');window.setTimeout(()=>{splash.classList.add('hide');const first=$('homePage');if(first){first.classList.remove('hide');first.classList.add('page-enter')}if(currentUser)renderPosts()},560)}
 updateTour(0);
-let forumStarting=false;
+// v1.6.4.2: show the interface independently of remote authentication; never hold splash on SDK/auth latency.
+let forumStarting=false,forumEnteredEarly=false;
+const connectionBanner=document.createElement('div');
+connectionBanner.id='connectionBanner';
+connectionBanner.setAttribute('role','status');
+connectionBanner.style.cssText='display:none;margin-bottom:14px;padding:12px 14px;border-radius:13px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;font-size:13px;line-height:1.65';
+const homePageNode=document.getElementById('homePage');
+homePageNode?.insertBefore(connectionBanner,homePageNode.firstChild);
+function showConnectionStatus(message,allowRetry=false){
+  connectionBanner.style.display='block';
+  connectionBanner.replaceChildren();
+  const label=document.createElement('span');label.textContent=message;connectionBanner.appendChild(label);
+  if(allowRetry){
+    const btn=document.createElement('button');btn.type='button';btn.textContent='重新连接';
+    btn.style.cssText='margin-left:10px;padding:6px 12px;border:0;border-radius:8px;background:#2563eb;color:white;font-weight:700';
+    btn.onclick=()=>startForum();connectionBanner.appendChild(btn);
+  }
+}
+function enterForumWithoutWaiting(){
+  if(forumEnteredEarly || forumReady)return;
+  forumEnteredEarly=true;
+  bootScreen.classList.add('hide');tourShell.classList.add('hide');
+  splash.classList.add('splash-out');document.body.classList.add('forum-entered');
+  const home=document.getElementById('homePage');if(home)home.classList.remove('hide');
+  showConnectionStatus('正在后台连接社区。网络较慢时可以先查看页面；帖子加载后会自动显示。');
+  window.setTimeout(()=>splash.classList.add('hide'),700);
+}
 async function startForum(){
   if(forumStarting)return;
   forumStarting=true;
-  forumReady=false;
-  bootScreen.classList.remove('hide','boot-out');
-  bootStatus.textContent='正在连接校园社区…';
-  document.getElementById('forumRetry')?.remove();
+  if(!forumEnteredEarly){bootStatus.textContent='正在连接校园社区…';}
+  else showConnectionStatus('正在后台连接社区（Supabase），页面无需等待连接完成。');
+  if(debugBox){debugBox.remove();debugBox=null;}
   try{
     await init();
     forumReady=true;
     if(debugBox){debugBox.remove();debugBox=null;}
-    bootStatus.textContent='社区准备就绪';
-    showFirstRunExperience();
+    connectionBanner.style.display='none';
+    if(!forumEnteredEarly){bootStatus.textContent='社区准备就绪';showFirstRunExperience();}
+    else {updateUserUI();renderPosts();renderMyPage();}
   }catch(e){
-    console.error('论坛启动失败',e);
-    showDebugError(e.stage||'论坛启动',e.original||e);
-    bootStatus.textContent='连接失败，请点击下方按钮重试';
-    const btn=document.createElement('button');
-    btn.id='forumRetry';btn.type='button';btn.textContent='重新连接论坛';
-    btn.style.cssText='margin-top:18px;border:0;border-radius:13px;padding:12px 22px;background:#2563eb;color:#fff;font-size:14px;font-weight:700;cursor:pointer';
-    btn.addEventListener('click',startForum);
-    bootScreen.appendChild(btn);
+    console.error('论坛连接失败',e);
+    const stage=e.stage||'论坛启动',detail=errorText(e.original||e);
+    if(!forumEnteredEarly)enterForumWithoutWaiting();
+    showConnectionStatus('连接失败（'+stage+'）：'+detail+'。请检查网络后重试。',true);
   }finally{forumStarting=false;}
 }
+// Hard upper bound on splash visibility, regardless of SDK/CDN/auth/data latency.
+window.setTimeout(enterForumWithoutWaiting,1800);
 startForum();
 </script></body>
 </html>
