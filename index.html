@@ -516,9 +516,26 @@ async function ensureSupabaseSDK(){
   }
   if(!window.supabase?.createClient)throw Object.assign(new Error('无法加载 Supabase SDK：两个 CDN 均连接失败。请尝试切换 Wi-Fi/移动网络或浏览器。'),{stage:'加载 Supabase SDK'});
 }
+async function robustFetch(url,options={},retries=2){
+  let lastErr=null;
+  for(let i=0;i<=retries;i++){
+    const ctrl=new AbortController();
+    const timer=setTimeout(()=>ctrl.abort(),12000);
+    try{
+      const res=await fetch(url,Object.assign({},options,{signal:ctrl.signal}));
+      clearTimeout(timer);
+      if(res.status>=500&&i<retries){await new Promise(r=>setTimeout(r,800*(i+1)));continue;}
+      return res;
+    }catch(e){
+      clearTimeout(timer);lastErr=e;
+      if(i<retries)await new Promise(r=>setTimeout(r,800*(i+1)));
+    }
+  }
+  throw lastErr||new Error('网络请求失败');
+}
 async function prepareClient(){
   await ensureSupabaseSDK();
-  if(!client)client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:false}});
+  if(!client)client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:false},global:{fetch:robustFetch}});
 }
 
 let currentUser=null,currentProfile=null,allProfiles=[];
@@ -624,25 +641,25 @@ let eventsBound=false,timeTimer=null;
 async function init(){
   await prepareClient();
   // Only authentication and posts are required to enter the forum.
-  let session=await retryable(getOrCreateSession,'匿名登录 / Session',1,9000);
+  let session=await retryable(getOrCreateSession,'匿名登录 / Session',1,30000);
   currentUser=session.user;
   try{
-    await retryable(createOrLoadProfile,'读取个人资料',0,7000);
+    await retryable(createOrLoadProfile,'读取个人资料',1,20000);
   }catch(profileError){
     const raw=profileError.original||profileError;
     const status=Number(raw?.status||0);
     if(!initRetryUsed && (status===401||status===403||String(raw?.code||'').toLowerCase().includes('jwt'))){
       initRetryUsed=true;
-      await retryable(()=>client.auth.signOut({scope:'local'}),'清理失效登录',0,5000);
-      session=await retryable(getOrCreateSession,'重新匿名登录',1,9000);
+      await retryable(()=>client.auth.signOut({scope:'local'}),'清理失效登录',0,10000);
+      session=await retryable(getOrCreateSession,'重新匿名登录',1,30000);
       currentUser=session.user;
-      await retryable(createOrLoadProfile,'重新读取个人资料',0,7000);
+      await retryable(createOrLoadProfile,'重新读取个人资料',1,20000);
     }else{
       console.warn('个人资料暂时无法读取，先使用默认昵称进入',profileError);
       currentProfile={id:currentUser.id,nickname:'同学',avatar:'😀',is_admin:false};
     }
   }
-  await retryable(loadPosts,'读取帖子',1,9000);
+  await retryable(loadPosts,'读取帖子',1,30000);
   if(!eventsBound){bindEvents();eventsBound=true;}
   updateUserUI();renderPosts();renderMyPage();
   if(!timeTimer)timeTimer=setInterval(relativeRefresh,30000);
@@ -866,7 +883,7 @@ function showFirstRunExperience(){
 function finishReturningVisit(){splash.classList.add('splash-out');document.body.classList.add('forum-entered');window.setTimeout(()=>{splash.classList.add('hide');const first=$('homePage');if(first){first.classList.remove('hide');first.classList.add('page-enter')}if(currentUser)renderPosts()},560)}
 updateTour(0);
 // v1.6.4.2: show the interface independently of remote authentication; never hold splash on SDK/auth latency.
-let forumStarting=false,forumEnteredEarly=false;
+let forumStarting=false,forumEnteredEarly=false,autoRetryCount=0;
 const connectionBanner=document.createElement('div');
 connectionBanner.id='connectionBanner';
 connectionBanner.setAttribute('role','status');
@@ -900,7 +917,7 @@ async function startForum(){
   if(debugBox){debugBox.remove();debugBox=null;}
   try{
     await init();
-    forumReady=true;
+    forumReady=true;autoRetryCount=0;
     if(debugBox){debugBox.remove();debugBox=null;}
     connectionBanner.style.display='none';
     if(!forumEnteredEarly){bootStatus.textContent='社区准备就绪';showFirstRunExperience();}
@@ -909,7 +926,14 @@ async function startForum(){
     console.error('论坛连接失败',e);
     const stage=e.stage||'论坛启动',detail=errorText(e.original||e);
     if(!forumEnteredEarly)enterForumWithoutWaiting();
-    showConnectionStatus('连接失败（'+stage+'）：'+detail+'。请检查网络后重试。',true);
+    if(autoRetryCount<2){
+      autoRetryCount++;
+      showConnectionStatus('连接不稳定（'+stage+'）：'+detail+'。'+(autoRetryCount*3)+' 秒后自动重试（第 '+autoRetryCount+' / 2 次）…');
+      window.setTimeout(()=>{startForum()},autoRetryCount*3000);
+    }else{
+      showConnectionStatus('连接失败（'+stage+'）：'+detail+'。已自动重试 2 次仍未成功，请切换 Wi‑Fi / 蜂窝网络后点“重新连接”。',true);
+      autoRetryCount=0;
+    }
   }finally{forumStarting=false;}
 }
 // Hard upper bound on splash visibility, regardless of SDK/CDN/auth/data latency.
