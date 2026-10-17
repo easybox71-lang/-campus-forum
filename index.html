@@ -768,11 +768,11 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
   </div>
 </div>
 
-<!-- 私信举报 -->
+<!-- 私信举报（私信是两人会话，举报即举报对方用户） -->
 <div class="modal-mask hide" id="dmReportModal">
   <div class="modal">
-    <h3>🚨 举报私信</h3>
-    <div class="tip">请选择举报原因，管理员会尽快处理。</div>
+    <h3 id="dmReportTitle">🚨 举报用户</h3>
+    <div class="tip">举报该用户的不当私信行为，管理员会尽快处理。</div>
     <div class="report-reasons" id="dmReportReasons"></div>
     <textarea id="dmReportDetail" maxlength="300" placeholder="补充说明（选填）" style="width:100%;min-height:74px;border:1px solid var(--border);background:#f8fafc;border-radius:10px;padding:10px 12px;outline:0;font-size:14px;line-height:1.6;resize:vertical"></textarea>
     <div class="status" id="dmReportStatus">请选择一个举报原因</div>
@@ -864,7 +864,7 @@ function unlockScroll(){scrollLocks=Math.max(0,scrollLocks-1);if(!scrollLocks){d
 let myHistory=[],viewedSet=new Set(),detailOpen=false,detailPostId=null;
 let pendingPostImages=[],pendingCommentImages={};
 // 第二阶段：论坛管理（举报 / 置顶 / 隐藏 / 管理员后台）
-let reports=[],adminPosts=[],hiddenPosts=[],adminTab='dashboard';
+let reports=[],dmReports=[],adminPosts=[],hiddenPosts=[],adminTab='dashboard';
 let editingPost=null,reportTarget=null;
 const REPORT_REASONS=[
   {v:'spam',l:'垃圾广告 / 微商引流'},
@@ -1169,7 +1169,7 @@ function openReport(type,id){
   document.querySelectorAll('.report-reason').forEach(x=>x.classList.remove('selected'));
   $('reportDetail').value='';
   $('reportStatus').textContent='请选择一个举报原因';$('reportStatus').className='status';
-  $('reportModalTitle').textContent=type==='post'?'🚨 举报帖子':'🚨 举报评论';
+  $('reportModalTitle').textContent=type==='post'?'🚨 举报帖子':type==='user'?'🚨 举报用户':'🚨 举报评论';
   $('reportModal').classList.remove('hide');
 }
 function pickReason(btn){document.querySelectorAll('.report-reason').forEach(x=>x.classList.remove('selected'));btn.classList.add('selected');$('reportStatus').textContent='';$('reportStatus').className='status';}
@@ -1177,13 +1177,13 @@ async function submitReport(){
   const sel=document.querySelector('.report-reason.selected');
   if(!sel){$('reportStatus').textContent='⚠️ 请先选择举报原因';$('reportStatus').className='status err';return}
   const label=sel.dataset.label||'',detail=$('reportDetail').value.trim();
-  $('reportSubmit').disabled=true;
+  const payload={target_type:reportTarget.type,target_id:reportTarget.id,reporter_id:currentUser.id,reason:label,detail};
+  // 乐观交互：先关弹窗提示成功，后台静默提交；失败再toast（避免等数据库 round-trip 的卡顿感）
+  $('reportModal').classList.add('hide');toast('已提交举报，管理员会尽快处理');
   try{
-    const {error}=await client.from('post_reports').insert({target_type:reportTarget.type,target_id:reportTarget.id,reporter_id:currentUser.id,reason:label,detail});
+    const {error}=await client.from('post_reports').insert(payload);
     if(error)throw error;
-    $('reportModal').classList.add('hide');toast('已提交举报，管理员会尽快处理');
-  }catch(e){$('reportStatus').textContent='举报失败：'+e.message;$('reportStatus').className='status err'}
-  finally{$('reportSubmit').disabled=false}
+  }catch(e){toast('举报提交失败：'+e.message)}
 }
 // —— 编辑帖子 ——
 function findPostAnywhere(id){return posts.find(p=>p.id===id)||adminPosts.find(p=>p.id===id)||hiddenPosts.find(p=>p.id===id)||myPosts.find(p=>p.id===id)||myParentPosts[id]||null}
@@ -1263,11 +1263,12 @@ function openAdminBackend(){
 function closeAdminPanel(){$('adminPanel').classList.add('hide')}
 function refreshAdmin(){if(!$('adminPanel').classList.contains('hide'))renderAdminBody()}
 async function loadAdminData(){
-  // 三路查询并行，缩短后台打开时间
-  const [rp,ap,hp]=await Promise.allSettled([
+  // 四路查询并行，缩短后台打开时间
+  const [rp,ap,hp,dr]=await Promise.allSettled([
     client.from('post_reports').select('*').order('created_at',{ascending:false}).limit(300),
     client.from('posts').select('*').order('created_at',{ascending:false}).limit(300),
-    client.from('posts').select('*').eq('is_hidden',true).order('created_at',{ascending:false}).limit(300)
+    client.from('posts').select('*').eq('is_hidden',true).order('created_at',{ascending:false}).limit(300),
+    client.from('dm_reports').select('*').order('created_at',{ascending:false}).limit(300)
   ]);
   if(rp.status==='fulfilled'&&!rp.value.error)reports=rp.value.data||[];
   else{console.warn('读取举报失败（请先运行 management-setup.sql）',rp.reason||rp.value?.error);reports=[]}
@@ -1275,11 +1276,17 @@ async function loadAdminData(){
   else{console.warn('读取后台帖子失败',ap.reason||ap.value?.error);adminPosts=[]}
   if(hp.status==='fulfilled'&&!hp.value.error)hiddenPosts=hp.value.data||[];
   else hiddenPosts=adminPosts.filter(p=>p.is_hidden);
+  if(dr.status==='fulfilled'&&!dr.value.error)dmReports=dr.value.data||[];
+  else{console.warn('读取私信举报失败',dr.reason||dr.value?.error);dmReports=[]}
 }
 function reportTargetPreview(r){
   if(r.target_type==='comment'){
     const c=comments.find(x=>x.id===r.target_id);
     return c?(esc((c.content||'').slice(0,140))||'[图片评论]'):'[评论不存在或已删除]';
+  }
+  if(r.target_type==='user'){
+    const p=profileFor(r.target_id);
+    return p?esc(p.nickname||'同学'):'[用户不存在]';
   }
   const p=findPostAnywhere(r.target_id);
   return p?(esc((p.content||'').slice(0,140))||'[图片帖]'):'[帖子不存在或已删除]';
@@ -1295,7 +1302,7 @@ function renderAdminBody(){
 }
 function updateReportBadge(n){const b=$('reportBadge');if(b){b.textContent=n;b.classList.toggle('hide',!n)}}
 function renderAdminDashboard(){
-  const pending=reports.filter(r=>r.status!=='handled').length;updateReportBadge(pending);
+  const pending=reports.filter(r=>r.status!=='handled').length+dmReports.filter(r=>r.status!=='handled').length;updateReportBadge(pending);
   const cards=[
     {n:adminPosts.length,l:'帖子总数',i:'📝'},
     {n:comments.length,l:'评论总数',i:'💬'},
@@ -1316,22 +1323,45 @@ function renderAdminDashboard(){
   </div>`;
 }
 function renderAdminReports(){
-  const pending=reports.filter(r=>r.status!=='handled').length;updateReportBadge(pending);
-  if(!reports.length)return `<div class="admin-section-title">🚨 举报管理</div><div class="empty"><span class="emoji">✅</span>当前没有任何举报</div>`;
-  const rows=reports.map(r=>{
+  // 帖子/评论/用户举报 + 私信举报，合并按时间倒序展示
+  const unified=[
+    ...reports.map(r=>({...r,_k:'post'})),
+    ...dmReports.map(r=>({...r,_k:'dm'}))
+  ].sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+  const pending=unified.filter(r=>r.status!=='handled').length;updateReportBadge(pending);
+  if(!unified.length)return `<div class="admin-section-title">🚨 举报管理</div><div class="empty"><span class="emoji">✅</span>当前没有任何举报</div>`;
+  const rows=unified.map(r=>{
     const handled=r.status==='handled';
     const reporter=profileFor(r.reporter_id)?.nickname||'匿名用户';
-    const acts=handled?'':(r.target_type==='comment'
-      ?`<button class="mini danger" data-aact="delcomment-report" data-cid="${r.target_id}" data-rid="${r.id}">🗑️ 删除评论</button><button class="mini" data-aact="dismissreport" data-rid="${r.id}">忽略举报</button>`
-      :`<button class="mini" data-aact="editpost" data-id="${r.target_id}">✏️ 修改</button><button class="mini" data-aact="hidepost" data-id="${r.target_id}" data-rid="${r.id}">👁️ 隐藏</button><button class="mini danger" data-aact="delpost" data-id="${r.target_id}" data-rid="${r.id}">🗑️ 删除</button><button class="mini" data-aact="dismissreport" data-rid="${r.id}">忽略举报</button>`);
+    let targetLine='',acts='';
+    if(r._k==='dm'){
+      const reported=profileFor(r.reported_id)?.nickname||'未知用户';
+      targetLine=`被举报用户（私信）：<b>${esc(reported)}</b>`;
+      acts=handled?'':`<button class="mini" data-aact="viewuser" data-uid="${r.reported_id||''}">👤 查看主页</button><button class="mini" data-aact="dismissdmreport" data-rid="${r.id}">忽略举报</button>`;
+    }else if(r.target_type==='comment'){
+      targetLine=`被举报评论：${reportTargetPreview(r)}`;
+      acts=handled?'':`<button class="mini danger" data-aact="delcomment-report" data-cid="${r.target_id}" data-rid="${r.id}">🗑️ 删除评论</button><button class="mini" data-aact="dismissreport" data-rid="${r.id}">忽略举报</button>`;
+    }else if(r.target_type==='user'){
+      targetLine=`被举报用户：${reportTargetPreview(r)}`;
+      acts=handled?'':`<button class="mini" data-aact="viewuser" data-uid="${r.target_id}">👤 查看主页</button><button class="mini" data-aact="dismissreport" data-rid="${r.id}">忽略举报</button>`;
+    }else{
+      targetLine=`被举报帖子：${reportTargetPreview(r)}`;
+      acts=handled?'':`<button class="mini" data-aact="editpost" data-id="${r.target_id}">✏️ 修改</button><button class="mini" data-aact="hidepost" data-id="${r.target_id}" data-rid="${r.id}">👁️ 隐藏</button><button class="mini danger" data-aact="delpost" data-id="${r.target_id}" data-rid="${r.id}">🗑️ 删除</button><button class="mini" data-aact="dismissreport" data-rid="${r.id}">忽略举报</button>`;
+    }
     return `<div class="admin-report ${handled?'handled':''}" data-rid="${r.id}">
       <div class="admin-report-head"><span class="report-reason-tag">${esc(r.reason||'未填写原因')}</span><span class="admin-report-meta">举报人：${esc(reporter)} · ${timeHtml(r.created_at)}${handled?'<span class="handled-badge">已处理</span>':''}</span></div>
-      <div class="admin-report-target">被举报${r.target_type==='comment'?'评论':'帖子'}：${reportTargetPreview(r)}</div>
+      <div class="admin-report-target">${targetLine}</div>
       ${r.detail?`<div class="admin-report-detail">补充说明：${esc(r.detail)}</div>`:''}
       ${acts?`<div class="admin-report-acts">${acts}</div>`:''}
     </div>`;
   }).join('');
-  return `<div class="admin-section-title">🚨 举报管理 <span class="admin-sub">（待处理 ${pending} / 共 ${reports.length}）</span></div><div class="admin-list">${rows}</div>`;
+  return `<div class="admin-section-title">🚨 举报管理 <span class="admin-sub">（待处理 ${pending} / 共 ${unified.length}）</span></div><div class="admin-list">${rows}</div>`;
+}
+async function dismissDMReport(reportId,silent){
+  const {error}=await client.from('dm_reports').update({status:'handled'}).eq('id',reportId);
+  if(error){if(!silent)toast('操作失败：'+error.message);return}
+  const i=dmReports.findIndex(r=>r.id===reportId);if(i>=0)dmReports[i]={...dmReports[i],status:'handled'};
+  if(!silent){toast('已忽略该举报');refreshAdmin()}
 }
 function renderAdminPosts(){
   const rows=adminPosts.map(p=>`<div class="admin-row" data-id="${p.id}">
@@ -1393,6 +1423,8 @@ function onAdminClick(e){
     case 'delpost':adminDeletePost(id,rid);break;
     case 'delcomment-report':adminDeleteCommentReport(cid,rid);break;
     case 'dismissreport':dismissReport(rid);break;
+    case 'dismissdmreport':dismissDMReport(rid);break;
+    case 'viewuser':if(b.dataset.uid)openUserProfile(b.dataset.uid);break;
     case 'batch-pin':batchAction('pin');break;
     case 'batch-unpin':batchAction('unpin');break;
     case 'batch-hide':batchAction('hide');break;
@@ -1674,11 +1706,18 @@ async function renderDetailComments(id,expand){
   if(expand&&!cs.length){try{const {data}=await client.from('comments').select('*').eq('post_id',id).order('created_at');if(data)comments=[...comments,...data];cs=comments.filter(c=>c.post_id===id).sort((a,b)=>(b.is_pinned?1:0)-(a.is_pinned?1:0));}catch(e){}}
   box.innerHTML=cs.length?cs.map(commentHtml).join(''):'<div style="color:var(--muted);font-size:13px;padding:6px 0">还没有评论，来抢沙发～</div>';
 }
+let viewHistoryWarned=false;
+function warnViewHistoryOnce(e){
+  if(viewHistoryWarned)return;viewHistoryWarned=true;
+  const code=e?.code||'';
+  if(code==='42P01'||code==='PGRST205'||code==='42703')toast('浏览历史功能未初始化：请先在 Supabase 运行 feed-history-setup.sql');
+  else toast('浏览记录失败：'+(e?.message||'未知错误'));
+}
 async function recordView(id){
   const p=posts.find(x=>x.id===id);if(!p)return;
   if(!viewedSet.has(id)){viewedSet.add(id);p.views=(p.views||0)+1;updateDetailStats(id);}
   if(!currentUser)return;
-  try{await client.from('view_history').upsert({user_id:currentUser.id,post_id:id,created_at:new Date().toISOString()},{onConflict:'user_id,post_id'});}catch(e){console.warn('记录浏览失败',e)}
+  try{const {error}=await client.from('view_history').upsert({user_id:currentUser.id,post_id:id,created_at:new Date().toISOString()},{onConflict:'user_id,post_id'});if(error)throw error;}catch(e){console.warn('记录浏览失败',e);warnViewHistoryOnce(e);}
 }
 function updateDetailStats(id){
   if(!detailOpen||detailPostId!==id)return;
@@ -1731,7 +1770,7 @@ async function refreshHistory(){
     if(error)throw error;
     myHistory=data||[];
     if(myTab==='history')renderMyPage();
-  }catch(e){console.warn('读取浏览历史失败（请先运行 feed-history-setup.sql）',e);}
+  }catch(e){console.warn('读取浏览历史失败',e);warnViewHistoryOnce(e);}
 }
 async function onFeedChange(e){
   const inp=e.target.closest('.cinput-file');if(!inp)return;
@@ -1748,6 +1787,11 @@ function updatePostActions(id){
   document.querySelectorAll(`[data-act="like"][data-id="${id}"]`).forEach(b=>{const on=isLiked(id);b.classList.toggle('like-on',on);b.textContent=`${on?'❤️':'♡'} 点赞 ${st.likes}`;});
   document.querySelectorAll(`[data-act="fav"][data-id="${id}"]`).forEach(b=>{const on=isFav(id);b.classList.toggle('fav-on',on);b.textContent=`${on?'⭐':'☆'} 收藏 ${st.favorites}`;});
   document.querySelectorAll(`[data-act="comment"][data-id="${id}"]`).forEach(b=>{b.textContent=`💬 评论 ${st.comments}`;});
+  // 详情页的评论按钮是 toggle-comments（展开时显示"收起评论"不带计数），原地刷新时保留展开态
+  document.querySelectorAll(`[data-act="toggle-comments"][data-id="${id}"]`).forEach(b=>{
+    const expanded=detailOpen&&detailPostId===id&&$('detailComments')&&$('detailComments').style.display==='block';
+    b.textContent='💬 '+(expanded?'收起评论':'查看评论 '+st.comments);
+  });
 }
 // 只重建单条帖子卡片（用于发评论/删评论后局部更新）
 function rerenderPost(id){
@@ -1994,9 +2038,16 @@ function renderNotifications(){
   box.querySelectorAll('.notif-item').forEach(el=>el.onclick=()=>onNotifClick(el));
 }
 async function onNotifClick(el){
-  const id=el.dataset.nid,postId=el.dataset.post,convId=el.dataset.conv;
+  const id=el.dataset.nid,postId=el.dataset.post,convId=el.dataset.conv,type=el.dataset.type;
   if(el.classList.contains('unread')){
     await client.from('notifications').update({is_read:true}).eq('id',id).then(()=>{const i=notifications.findIndex(x=>x.id===id);if(i>=0)notifications[i].is_read=true;myUnread=Math.max(0,myUnread-1);updateBell();el.classList.remove('unread');el.querySelector('.notif-dot')?.remove();}).catch(()=>{});
+  }
+  // 举报类通知：管理员 → 跳后台举报管理；普通用户 → 仅关闭
+  if(type==='report_admin'){
+    closeNotifPanel();
+    if(isAdmin()){openAdminBackend();adminTab='reports';renderAdminBody();}
+    else toast('已收到，管理员会尽快处理');
+    return;
   }
   if(convId){closeNotifPanel();openDMPanel().then(()=>openDMChat(convId));return;}
   if(postId){closeNotifPanel();openPostDetail(postId);return;}
@@ -2099,17 +2150,30 @@ async function uploadDMImage(file){
   if(r.error)throw r.error;
   return r.data.signedUrl;
 }
-function openDMReport(convId,msgId){dmReportTarget={convId,msgId};$('dmReportReasons').innerHTML=REPORT_REASONS.map(r=>`<button type="button" class="report-reason" data-label="${esc(r.l)}">${r.l}</button>`).join('');document.querySelectorAll('#dmReportReasons .report-reason').forEach(x=>x.classList.remove('selected'));$('dmReportDetail').value='';$('dmReportStatus').textContent='请选择举报原因';$('dmReportStatus').className='status';$('dmReportModal').classList.remove('hide');}
+function openDMReport(convId,msgId){
+  // 私信是两人会话，举报对象就是对方这个人
+  const c=conversations.find(x=>x.id===convId);
+  const other=c?otherOf(c):null;
+  dmReportTarget={convId,msgId,reportedId:other};
+  $('dmReportTitle').textContent='🚨 举报用户'+(other?'：'+displayName(other,false):'');
+  $('dmReportReasons').innerHTML=REPORT_REASONS.map(r=>`<button type="button" class="report-reason" data-label="${esc(r.l)}">${r.l}</button>`).join('');document.querySelectorAll('#dmReportReasons .report-reason').forEach(x=>x.classList.remove('selected'));$('dmReportDetail').value='';$('dmReportStatus').textContent='请选择举报原因';$('dmReportStatus').className='status';$('dmReportModal').classList.remove('hide');
+}
 async function submitDMReport(){
   const sel=document.querySelector('#dmReportReasons .report-reason.selected');
   if(!sel){$('dmReportStatus').textContent='⚠️ 请先选择举报原因';$('dmReportStatus').className='status err';return;}
-  const {error}=await client.from('dm_reports').insert({reporter_id:currentUser.id,conversation_id:dmReportTarget.convId,message_id:dmReportTarget.msgId,reason:sel.dataset.label,detail:$('dmReportDetail').value.trim()});
-  if(error){$('dmReportStatus').textContent='失败：'+error.message;$('dmReportStatus').className='status err';return;}
-  $('dmReportModal').classList.add('hide');toast('已举报，管理员会尽快处理');
+  const payload={reporter_id:currentUser.id,conversation_id:dmReportTarget.convId,message_id:dmReportTarget.msgId,reported_id:dmReportTarget.reportedId,reason:sel.dataset.label,detail:$('dmReportDetail').value.trim()};
+  // 乐观交互：先关弹窗，后台静默提交
+  $('dmReportModal').classList.add('hide');toast('已提交举报，管理员会尽快处理');
+  try{
+    const {error}=await client.from('dm_reports').insert(payload);
+    if(error)throw error;
+  }catch(e){toast('举报提交失败：'+e.message)}
 }
 // ---- Realtime + 桌面推送 ----
+let rtSubscribed=false;
 function subscribeRealtime(){
-  if(!client||!currentUser)return;
+  if(!client||!currentUser||rtSubscribed)return;
+  rtSubscribed=true;
   try{
     client.channel('notif-'+currentUser.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'recipient_id=eq.'+currentUser.id},(payload)=>{
       loadNotifications().catch(()=>{});
@@ -2120,7 +2184,121 @@ function subscribeRealtime(){
       if(activeConvId&&m.conversation_id===activeConvId)loadMessages(activeConvId);
       loadConversations().catch(()=>{});
     }).subscribe();
+    rtSubscribePosts();
   }catch(e){console.warn('Realtime 订阅失败',e)}
+}
+// ---- 帖子数据实时同步：别人点赞/收藏/评论/浏览后，本地即时更新，无需刷新 ----
+const rtDirty={likes:new Set(),favs:new Set(),comments:new Set(),posts:new Set(),structural:new Set(),feedReload:false,detailComments:false,follows:false};
+let rtTimer=null;
+function rtMark(kind,id){
+  const s=rtDirty[kind];
+  if(s instanceof Set){if(id!=null)s.add(id);}
+  else rtDirty[kind]=true;
+  if(!rtTimer)rtTimer=setTimeout(rtFlush,200);
+}
+function rtFlush(){
+  rtTimer=null;
+  // ① 结构变化（新帖/删除/置顶/隐藏）→ 重建卡片或整列表刷新
+  if(rtDirty.structural.size){
+    const ids=[...rtDirty.structural];rtDirty.structural.clear();
+    let full=rtDirty.feedReload;rtDirty.feedReload=false;
+    for(const id of ids){
+      const el=document.querySelector('.post-card[data-id="'+id+'"]');
+      if(el&&!full)rerenderPost(id);else full=true;
+    }
+    if(full)renderPosts();
+  }
+  // ② 计数变化（点赞/收藏/评论）→ 失效统计缓存，原地刷新所有可见卡片的按钮与统计
+  //    注意：updatePostActions 是全局查询，信息流/我的页/他人主页的卡片都会刷新，无需整页重渲染
+  const ids=new Set([...rtDirty.likes,...rtDirty.favs,...rtDirty.comments]);
+  rtDirty.likes.clear();rtDirty.favs.clear();rtDirty.comments.clear();
+  if(ids.size){
+    invalidateStats();
+    ids.forEach(id=>{updatePostActions(id);updateDetailStats(id);});
+  }
+  // ③ 浏览量等 posts 字段变化 → 只刷详情页的统计行（预览卡不显示浏览量，无需重渲染列表）
+  if(rtDirty.posts.size){
+    rtDirty.posts.forEach(id=>{if(detailOpen&&detailPostId===id)updateDetailStats(id);});
+    rtDirty.posts.clear();
+  }
+  // ④ 新评论到达时，若详情页正展开着评论列表，顺手刷新
+  if(rtDirty.detailComments){rtDirty.detailComments=false;if(detailOpen&&$('detailComments')&&$('detailComments').style.display==='block')renderDetailComments(detailPostId,false);}
+  // ⑤ 关注变化 → 重拉关注关系并刷新主页
+  if(rtDirty.follows){rtDirty.follows=false;loadFollows().catch(()=>{});if(userHomeUid&&!$('userHome').classList.contains('hide'))renderUserProfile(userHomeUid,profileFor(userHomeUid));}
+}
+function rtSubscribePosts(){
+  const c=client;
+  // 点赞
+  c.channel('rt-likes')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'post_likes'},p=>{
+      const r=p.new;if(!r||!r.post_id)return;
+      if(!likes.some(x=>x.post_id===r.post_id&&x.user_id===r.user_id))likes.push({post_id:r.post_id,user_id:r.user_id});
+      rtMark('likes',r.post_id);
+    })
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'post_likes'},p=>{
+      const r=p.old;if(!r||!r.post_id)return;
+      likes=likes.filter(x=>!(x.post_id===r.post_id&&x.user_id===r.user_id));
+      rtMark('likes',r.post_id);
+    }).subscribe();
+  // 收藏
+  c.channel('rt-favs')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'post_favorites'},p=>{
+      const r=p.new;if(!r||!r.post_id)return;
+      if(!favorites.some(x=>x.post_id===r.post_id&&x.user_id===r.user_id))favorites.push({post_id:r.post_id,user_id:r.user_id});
+      rtMark('favs',r.post_id);
+    })
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'post_favorites'},p=>{
+      const r=p.old;if(!r||!r.post_id)return;
+      favorites=favorites.filter(x=>!(x.post_id===r.post_id&&x.user_id===r.user_id));
+      rtMark('favs',r.post_id);
+    }).subscribe();
+  // 评论（新增/修改/删除）
+  c.channel('rt-comments')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'comments'},p=>{
+      const r=p.new;if(!r||!r.post_id)return;
+      if(!comments.some(x=>x.id===r.id))comments.push(r);
+      rtMark('comments',r.post_id);
+      if(detailOpen&&detailPostId===r.post_id)rtMark('detailComments');
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'comments'},p=>{
+      const r=p.new;if(!r||!r.id)return;
+      const i=comments.findIndex(x=>x.id===r.id);
+      if(i>=0)comments[i]={...comments[i],...r};else comments.push(r);
+      rtMark('comments',r.post_id);
+      if(detailOpen&&detailPostId===r.post_id)rtMark('detailComments');
+    })
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'comments'},p=>{
+      const r=p.old;if(!r||!r.post_id)return;
+      comments=comments.filter(x=>x.id!==r.id);
+      rtMark('comments',r.post_id);
+      if(detailOpen&&detailPostId===r.post_id)rtMark('detailComments');
+    }).subscribe();
+  // 帖子本身（浏览量 +1、置顶、隐藏、删除、新帖）
+  c.channel('rt-posts')
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'posts'},p=>{
+      const r=p.new;if(!r||!r.id)return;
+      const i=posts.findIndex(x=>x.id===r.id);
+      if(i<0){posts.unshift(r);rtMark('structural',r.id);rtMark('posts',r.id);return;}
+      const old=posts[i];
+      posts[i]={...old,...r};
+      rtMark('posts',r.id);
+      if(!!old.is_pinned!==!!r.is_pinned||!!old.is_hidden!==!!r.is_hidden){rtMark('structural',r.id);rtDirty.feedReload=true;}
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'posts'},p=>{
+      const r=p.new;if(!r||!r.id)return;
+      if(!posts.some(x=>x.id===r.id))posts.unshift(r);
+      rtMark('structural',r.id);rtMark('posts',r.id);rtDirty.feedReload=true;
+    })
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'posts'},p=>{
+      const r=p.old;if(!r||!r.id)return;
+      posts=posts.filter(x=>x.id!==r.id);
+      rtMark('structural',r.id);
+      if(detailOpen&&detailPostId===r.id)closePostDetail();
+    }).subscribe();
+  // 关注（关注数/粉丝数实时）
+  c.channel('rt-follows')
+    .on('postgres_changes',{event:'*',schema:'public',table:'follows'},()=>{rtMark('follows');})
+    .subscribe();
 }
 function showBrowserNotify(title,body){
   try{if(!('Notification' in window))return;if(Notification.permission==='granted')new Notification('文庙论坛 · '+title,{body:body||'',icon:'data:image/png;base64,iVBORwKGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='})}catch(e){}
@@ -2140,7 +2318,7 @@ function initPush(){
   }catch(e){}
 }
 async function savePushSub(sub){
-  try{const j=sub.toJSON();await client.from('push_subscriptions').upsert({user_id:currentUser.id,endpoint:j.endpoint,auth:j.keys.auth,p256dh:j.keys.p256dh},{onConflict:'user_id,endpoint'});}catch(e){}
+  try{const j=sub.toJSON();const {error}=await client.from('push_subscriptions').upsert({user_id:currentUser.id,endpoint:j.endpoint,auth:j.keys.auth,p256dh:j.keys.p256dh},{onConflict:'user_id,endpoint'});if(error)throw error;}catch(e){console.warn('推送订阅保存失败',e);}
 }
 const splash=document.getElementById('v12Splash');
 const bootScreen=document.getElementById('bootScreen');
