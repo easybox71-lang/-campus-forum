@@ -401,6 +401,97 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
 @media(max-width:768px){.container{padding-left:12px;padding-right:12px;gap:12px}.card,.my-page{border-radius:17px}.sidebar{background:rgba(255,255,255,.82);border-radius:15px;scrollbar-width:none}.sidebar::-webkit-scrollbar{display:none}.post-card{margin-bottom:12px}.mobile-nav button{padding-left:14px;padding-right:14px}}
 @media(hover:none){.card:hover,.post-card:hover{transform:none;box-shadow:var(--shadow-soft)}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}::view-transition-old(forum-content),::view-transition-new(forum-content){animation:none!important}}
+
+/* ===== 帖子预览（X 风格）：正文截断，整卡可点进详情 ===== */
+.post-card{cursor:pointer}
+.post-content.preview{display:-webkit-box;-webkit-line-clamp:8;-webkit-box-orient:vertical;overflow:hidden;position:relative}
+.post-content.preview::after{content:"";position:absolute;left:0;right:0;bottom:0;height:28px;background:linear-gradient(transparent,var(--card))}
+.post-open-hint{display:inline-block;margin-top:9px;font-size:13px;font-weight:700;color:var(--primary)}
+.post-card .actions .action{pointer-events:auto}
+
+/* ===== 帖子详情页（覆盖层） ===== */
+.lightbox{z-index:200!important}
+.detail-overlay{position:fixed;inset:0;z-index:90;background:rgba(15,23,42,.30);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;justify-content:center;align-items:flex-start;transition:opacity .22s ease}
+.detail-overlay.hide{display:none}
+.detail-sheet{position:relative;width:100%;max-width:620px;display:flex;flex-direction:column;background:var(--bg);box-shadow:0 -10px 44px rgba(15,23,42,.20);animation:detail-slide .26s var(--ease-out) both}
+@keyframes detail-slide{from{transform:translateY(26px);opacity:.35}to{transform:translateY(0);opacity:1}}
+@media(min-width:769px){.detail-sheet{margin-top:34px;border-radius:20px 20px 0 0;max-height:calc(100% - 34px)}}
+.detail-bar{position:sticky;top:0;display:flex;align-items:center;gap:12px;padding:12px 15px;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid #eef2f7;z-index:2}
+.detail-back{border:0;background:none;color:var(--primary);font-size:15px;font-weight:700;cursor:pointer;padding:4px 6px;border-radius:8px}
+.detail-back:hover{background:rgba(37,99,235,.08)}
+.detail-bar-title{font-size:15px;font-weight:800}
+.detail-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px}
+.detail-post{border:0;box-shadow:none;padding:0;animation:none;content-visibility:visible;contain-intrinsic-size:auto;cursor:default}
+.detail-stats{display:flex;gap:20px;flex-wrap:wrap;padding:13px 2px;margin:4px 0 14px;border-top:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;color:var(--sub);font-size:13px}
+.detail-stats b{color:var(--text);font-size:16px;margin-right:3px;font-weight:800}
+.detail-comment-toggle{cursor:pointer;font-weight:700;color:var(--primary);font-size:14px;display:inline-block;margin:4px 0 10px}
+.detail-comment-list .comment{margin-bottom:12px}
+.detail-comment-box{margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9}
+.detail-comment-box .comment-input-row{display:flex;gap:8px;align-items:center;margin-top:8px}
+.detail-comment-box .comment-input-row input{flex:1;min-width:0}
+.history-time{font-size:12px;color:var(--muted);margin:0 0 8px}
+
+/* ===== 第三阶段：关注 / 个人主页 / 私信 / 通知 ===== */
+.bell-wrap{position:relative;display:inline-flex}
+.bell-btn{border:1px solid var(--border);background:#fff;color:var(--sub);border-radius:50%;width:40px;height:40px;font-size:18px;display:grid;place-items:center}
+.bell-btn:hover{color:var(--primary);border-color:var(--primary)}
+.bell-badge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--danger);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center}
+.nav-msg{display:flex;gap:8px;align-items:center}
+.user-home,.notif-panel,.dm-panel{position:fixed;inset:0;z-index:95;background:rgba(15,23,42,.3);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;justify-content:center;align-items:flex-start}
+.user-home.hide,.notif-panel.hide,.dm-panel.hide{display:none}
+.uh-sheet,.notif-sheet,.dm-sheet{position:relative;width:100%;max-width:600px;height:100%;display:flex;flex-direction:column;background:var(--bg);box-shadow:0 -10px 44px rgba(15,23,42,.2)}
+@media(min-width:769px){.uh-sheet,.notif-sheet,.dm-sheet{margin-top:34px;border-radius:20px 20px 0 0;max-height:calc(100% - 34px)}}
+.uh-bar,.notif-bar,.dm-bar{position:sticky;top:0;display:flex;align-items:center;gap:12px;padding:12px 15px;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid #eef2f7;z-index:2}
+.uh-bar-title,.notif-bar-title,.dm-bar-title{font-size:15px;font-weight:800}
+.uh-back,.notif-back,.dm-back{border:0;background:none;color:var(--primary);font-size:15px;font-weight:700;cursor:pointer;padding:4px 6px;border-radius:8px}
+.uh-scroll,.notif-scroll,.dm-scroll{flex:1;overflow-y:auto;padding:16px}
+.uh-head{display:flex;gap:14px;align-items:center;padding:6px 4px 16px;border-bottom:1px solid #eef2f7;margin-bottom:14px}
+.uh-head .avatar{width:60px;height:60px;font-size:30px}
+.uh-meta{font-size:12px;color:var(--muted)}
+.uh-bio{font-size:14px;color:var(--sub);line-height:1.7;background:#f8fafc;border-radius:12px;padding:12px;margin-bottom:14px}
+.uh-stats{display:flex;gap:20px;font-size:13px;color:var(--sub);margin:8px 0 14px}
+.uh-stats b{color:var(--text);font-size:16px;margin-right:3px}
+.uh-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.uh-posts-title{font-size:14px;font-weight:800;margin:10px 0 8px}
+.follow-row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #f1f5f9}
+.follow-row .avatar{cursor:pointer}
+.follow-info{flex:1;min-width:0;cursor:pointer}
+.follow-name{font-size:14px;font-weight:700}
+.follow-sub{font-size:12px;color:var(--muted)}
+.notif-item{display:flex;gap:11px;padding:13px 10px;border-bottom:1px solid #f1f5f9;cursor:pointer;position:relative}
+.notif-item:hover{background:#f8fafc}
+.notif-item.unread{background:#f5f9ff}
+.notif-ic{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;background:#eef2ff;border-radius:11px;font-size:19px}
+.notif-body{flex:1;min-width:0}
+.notif-title{font-size:14px;font-weight:700}
+.notif-text{font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.notif-time{font-size:11px;color:var(--muted);margin-top:3px}
+.notif-dot{position:absolute;right:12px;top:16px;width:9px;height:9px;border-radius:50%;background:var(--primary)}
+.dm-list{flex:1;overflow-y:auto;padding:10px}
+.dm-item{display:flex;gap:11px;align-items:center;padding:12px;border-radius:12px;cursor:pointer}
+.dm-item:hover{background:#f1f5f9}
+.dm-item .avatar{width:44px;height:44px;font-size:22px}
+.dm-item-name{font-size:14px;font-weight:700}
+.dm-item-sub{font-size:12px;color:var(--muted)}
+.dm-chat{flex:1;display:flex;flex-direction:column;min-height:0}
+.dm-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.dm-msg{display:flex;flex-direction:column;max-width:80%}
+.dm-msg.mine{align-self:flex-end;align-items:flex-end}
+.dm-bubble{background:#fff;border:1px solid #eef2f7;padding:9px 13px;border-radius:14px;font-size:14px;color:var(--text);line-height:1.6;word-break:break-word}
+.dm-msg.mine .dm-bubble{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:0}
+.dm-img{max-width:200px;border-radius:12px;margin-bottom:4px;cursor:zoom-in}
+.dm-time{font-size:10px;color:var(--muted);margin-top:2px}
+.dm-empty{text-align:center;color:var(--muted);padding:30px;font-size:13px}
+.dm-input-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #eef2f7;background:#fff;flex-wrap:wrap}
+.dm-input{flex:1;min-width:0;border:1px solid var(--border);background:#f8fafc;border-radius:10px;padding:10px 12px;outline:0}
+.dm-input:focus{background:#fff;border-color:var(--primary)}
+.dm-send{border:0;background:var(--primary);color:#fff;border-radius:10px;padding:10px 16px;font-weight:700}
+.dm-photo{width:40px;border:1px solid var(--border);background:#fff;border-radius:10px;display:grid;place-items:center;color:var(--sub);font-size:18px}
+.profile-field{margin-bottom:12px}
+.profile-field label{display:block;font-size:12px;color:var(--sub);font-weight:600;margin-bottom:5px}
+.profile-field input,.profile-field textarea{width:100%;border:1px solid var(--border);background:#f8fafc;border-radius:10px;padding:10px 12px;outline:0;font-size:14px}
+.profile-field input:focus,.profile-field textarea:focus{background:#fff;border-color:var(--primary)}
+.profile-toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);margin:6px 0}
 </style>
 </head>
 <body><div class="v12-splash" id="v12Splash" aria-label="思茅一中校园论坛启动与使用引导">
@@ -452,6 +543,10 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
       <div class="nav-menu">
         <button class="nav-link active" data-nav="home">首页</button>
         <button class="nav-link" data-nav="my">我的</button>
+      </div>
+      <div class="nav-msg">
+        <button class="bell-wrap" id="bellBtn" title="通知"><span class="bell-btn">🔔</span><span class="bell-badge hide" id="bellBadge">0</span></button>
+        <button class="bell-wrap" id="dmBtn" title="私信"><span class="bell-btn">✉️</span></button>
       </div>
       <button class="user-chip" id="userChip"><span class="av" id="chipAvatar">😀</span><span id="chipNick">同学</span></button>
     </div>
@@ -518,7 +613,7 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
       <div class="my-page">
         <div class="my-info">
           <div class="avatar" id="myAvatar">😀</div>
-          <div><div style="font-size:19px;font-weight:800" id="myNick">同学</div><div style="font-size:12px;color:var(--muted)" id="myRole">思茅一中 · 在校学生</div></div>
+          <div><div style="font-size:19px;font-weight:800" id="myNick">同学</div><div style="font-size:12px;color:var(--muted)" id="myRole">思茅一中 · 在校学生</div><div style="font-size:12px;color:var(--sub);margin-top:4px" id="myBioLine"></div></div>
           <div class="my-actions">
             <button class="mini" id="editProfileBtn">修改资料</button>
             <button class="mini" id="adminEntryBtn">🔐 管理员</button><button class="mini" id="aboutBtn">🏫 关于我们</button>
@@ -530,6 +625,9 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
           <button class="tab" data-tab="likes">❤️ 我的点赞</button>
           <button class="tab" data-tab="favorites">⭐ 我的收藏</button>
           <button class="tab" data-tab="hidden">🚫 隐藏</button>
+          <button class="tab" data-tab="history">🕘 浏览历史</button>
+          <button class="tab" data-tab="following">➕ 关注</button>
+          <button class="tab" data-tab="followers">👥 粉丝</button>
         </div>
         <div class="contact-card"><div class="contact-icon">✉️</div><div><h3>使用帮助与联系</h3><p>如在使用中遇到问题，请联系该邮箱：<br><a href="mailto:easybox71@Outlook.com">easybox71@Outlook.com</a></p><button class="mini" id="replayTourBtn" style="margin-top:12px">✨ 重新查看新手引导</button></div></div>
         <div id="myContentList"></div>
@@ -541,6 +639,8 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
 <nav class="mobile-nav">
   <button data-nav="home" class="active">🏠<br>首页</button>
   <button id="mobileUserBtn">👤<br>资料</button>
+  <button id="mobileMsgBtn">🔔<br>消息</button>
+  <button id="mobileDmBtn">✉️<br>私信</button>
   <button data-nav="my">📋<br>我的</button>
 </nav>
 
@@ -549,8 +649,8 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
 
 <div class="modal-mask hide" id="userModal">
   <div class="modal">
-    <h3>修改昵称与头像</h3>
-    <div class="tip">昵称仅保存在当前浏览器中。静态测试版不会上传到服务器。</div>
+    <h3>修改资料</h3>
+    <div class="tip">昵称、头像、简介仅保存在当前浏览器中；年级/班级/真实姓名会随账号保存。</div>
     <input type="text" id="nickInput" maxlength="20" autocomplete="off" placeholder="输入昵称">
     <div class="status" id="nickStatus">请输入昵称</div>
     <div class="avatars" id="avatarSelect">
@@ -560,6 +660,12 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
       <button class="avatar-choice" data-avatar="😏">😏</button><button class="avatar-choice" data-avatar="🥰">🥰</button>
       <button class="avatar-choice" data-avatar="🤠">🤠</button>
     </div>
+    <div class="profile-field"><label>个人简介（选填）</label><textarea id="bioInput" maxlength="200" rows="3" placeholder="介绍一下自己～"></textarea></div>
+    <div style="display:flex;gap:10px"><div class="profile-field" style="flex:1"><label>年级（选填）</label><input type="text" id="gradeInput" maxlength="20" placeholder="如：高一"></div><div class="profile-field" style="flex:1"><label>班级（选填）</label><input type="text" id="classInput" maxlength="20" placeholder="如：3班"></div></div>
+    <div class="profile-field"><label>真实姓名（选填，仅自己可见，除非下方开启公开）</label><input type="text" id="realNameInput" maxlength="20" placeholder="真实姓名"></div>
+    <label class="profile-toggle"><input type="checkbox" id="realNamePublic"> 向他人公开我的真实姓名</label>
+    <label class="profile-toggle"><input type="checkbox" id="showFollows" checked> 在个人主页展示我的关注 / 粉丝列表</label>
+    <div class="profile-field"><button class="secondary" id="pushBtn" style="width:100%">🔔 开启桌面消息通知</button><div class="status" id="pushStatus" style="margin-top:6px"></div></div>
     <div class="modal-actions"><button class="secondary" id="cancelUser">关闭</button><button class="primary-btn" style="margin:0;flex:1" id="saveUserBtn">保存</button></div>
   </div>
 </div>
@@ -624,6 +730,66 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
 </div>
 
 <div class="lightbox hide" id="lightbox"><img id="lightboxImg" alt=""></div>
+
+<!-- 个人主页（他人视角） -->
+<div class="user-home hide" id="userHome">
+  <div class="uh-sheet">
+    <div class="uh-bar"><button class="uh-back" id="userHomeClose">← 返回</button><div class="uh-bar-title">个人主页</div></div>
+    <div class="uh-scroll">
+      <div class="uh-head"><div class="avatar" id="uhAvatar">😀</div><div style="min-width:0;flex:1"><div style="font-size:18px;font-weight:800" id="uhNick">同学</div><div class="uh-meta" id="uhMeta"></div></div></div>
+      <div class="uh-stats" id="uhStats"></div>
+      <div class="uh-bio" id="uhBio"></div>
+      <div class="uh-actions" id="uhActions"></div>
+      <div class="uh-posts-title">TA 的公开动态</div>
+      <div id="uhPosts"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 通知中心 -->
+<div class="notif-panel hide" id="notifPanel">
+  <div class="notif-sheet">
+    <div class="notif-bar"><button class="notif-back" id="notifClose">← 返回</button><div class="notif-bar-title">🔔 通知</div></div>
+    <div class="notif-scroll"><div id="notifList"></div></div>
+  </div>
+</div>
+
+<!-- 私信中心 -->
+<div class="dm-panel hide" id="dmPanel">
+  <div class="dm-sheet">
+    <div class="dm-bar"><button class="dm-back" id="dmPanelClose">← 返回</button><div class="dm-bar-title">✉️ 私信</div><button class="mini" id="dmReportBtn" style="margin-left:auto">🚨 举报</button></div>
+    <div class="dm-list" id="dmList"></div>
+    <div class="dm-chat hide" id="dmChat">
+      <div class="dm-bar"><button class="dm-back" id="dmBack">← 会话</button><div class="dm-bar-title" id="dmChatName"></div></div>
+      <div class="dm-messages" id="dmMessages"></div>
+      <div class="preview-list" id="dmPreview" style="width:100%;padding:0 12px"></div>
+      <div class="dm-input-row"><button class="dm-photo" id="dmPhoto">📷</button><input type="text" class="dm-input" id="dmInput" placeholder="发条私信…" maxlength="2000"><button class="dm-send" id="dmSend">发送</button><input type="file" id="dmImageInput" accept="image/*" class="hidden-file"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 私信举报 -->
+<div class="modal-mask hide" id="dmReportModal">
+  <div class="modal">
+    <h3>🚨 举报私信</h3>
+    <div class="tip">请选择举报原因，管理员会尽快处理。</div>
+    <div class="report-reasons" id="dmReportReasons"></div>
+    <textarea id="dmReportDetail" maxlength="300" placeholder="补充说明（选填）" style="width:100%;min-height:74px;border:1px solid var(--border);background:#f8fafc;border-radius:10px;padding:10px 12px;outline:0;font-size:14px;line-height:1.6;resize:vertical"></textarea>
+    <div class="status" id="dmReportStatus">请选择一个举报原因</div>
+    <div class="modal-actions"><button class="secondary" id="dmReportCancel">取消</button><button class="primary-btn" style="margin:0;flex:1" id="dmReportSubmit">提交举报</button></div>
+  </div>
+</div>
+
+<!-- 帖子详情页（覆盖层）：点击信息流中的预览卡片进入，显示完整内容 + 四量 + 可折叠评论 -->
+<div class="detail-overlay hide" id="postDetail">
+  <div class="detail-sheet">
+    <div class="detail-bar">
+      <button class="detail-back" id="detailClose">← 返回</button>
+      <div class="detail-bar-title">帖子详情</div>
+    </div>
+    <div class="detail-scroll" id="detailBody"></div>
+  </div>
+</div>
 
 <!-- SDK 通过带超时的备用 CDN 加载，避免阻塞整页 HTML -->
 <script>
@@ -691,6 +857,8 @@ let currentUser=null,currentProfile=null,allProfiles=[];
 let posts=[],comments=[],likes=[],favorites=[];
 let currentCategory='all',myTab='posts',sortMode='new',searchText='';
 const PAGE_SIZE=30;let postsLoaded=0,postsHasMore=true;let myPosts=[],myComments=[],myParentPosts={};
+let followingSet=new Set(),followerSet=new Set(),notifications=[],myUnread=0,conversations=[],activeConvId=null,followStats={following:0,followers:0},pendingDMImages=[],dmReportTarget={convId:null,msgId:null};
+let myHistory=[],viewedSet=new Set(),detailOpen=false,detailPostId=null;
 let pendingPostImages=[],pendingCommentImages={};
 // 第二阶段：论坛管理（举报 / 置顶 / 隐藏 / 管理员后台）
 let reports=[],adminPosts=[],hiddenPosts=[],adminTab='dashboard';
@@ -882,6 +1050,7 @@ async function init(){
   }
   updateUserUI();renderPosts();renderMyPage();
   loadMyData().then(()=>renderMyPage()).catch(()=>{});
+  loadFollows().catch(()=>{});loadNotifications().catch(()=>{});subscribeRealtime();initPush();
 }
 
 async function createOrLoadProfile(){
@@ -890,7 +1059,7 @@ async function createOrLoadProfile(){
   currentProfile=data;
   if(!currentProfile) throw new Error('profile 不存在：当前匿名用户没有对应的 profiles 记录');
 }
-async function loadProfiles(){const {data,error}=await client.from('profiles').select('id,nickname,avatar,is_admin');if(error){error.stage='读取 profiles';throw error;}allProfiles=data||[];currentProfile=allProfiles.find(p=>p.id===currentUser.id)||currentProfile;}
+async function loadProfiles(){const {data,error}=await client.from('profiles').select('id,nickname,avatar,is_admin,bio,grade,class_name,real_name,real_name_public,show_follows');if(error){error.stage='读取 profiles';throw error;}allProfiles=data||[];currentProfile=allProfiles.find(p=>p.id===currentUser.id)||currentProfile;}
 async function loadPosts(reset=false){
   if(reset){postsLoaded=0;postsHasMore=true;}
   const searching=!!searchText;
@@ -918,7 +1087,9 @@ async function loadFavorites(){const {data,error}=await client.from('post_favori
 function updateUserUI(){
   const av=currentProfile?.avatar||'😀',nick=currentProfile?.nickname||'同学';
   $('chipAvatar').textContent=av;$('chipNick').textContent=nick;$('myAvatar').textContent=av;$('myNick').textContent=nick;
-  $('myRole').innerHTML=currentProfile?.is_admin?'思茅一中 · <b style="color:#d97706">管理员</b>':'思茅一中 · 在校学生';
+  const meta=[currentProfile?.grade,currentProfile?.class_name].filter(Boolean).join(' · ');
+  $('myRole').innerHTML=(currentProfile?.is_admin?'思茅一中 · <b style="color:#d97706">管理员</b>':(meta||'思茅一中 · 在校学生'));
+  $('myBioLine')&&($('myBioLine').textContent=currentProfile?.bio||'');
   $('adminEntryBtn').textContent=currentProfile?.is_admin?'👑 管理员':'🔐 管理员';
   $('adminEntryBtn').classList.toggle('admin',!!currentProfile?.is_admin);
 }
@@ -926,7 +1097,7 @@ function updateUserUI(){
 function bindEvents(){
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>switchPage(b.dataset.nav));
   document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{currentCategory=b.dataset.cat;document.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('active',x.dataset.cat===currentCategory));switchPage('home');refreshPosts(true,true);});
-  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{myTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderMyPage(true);if(myTab==='hidden')refreshHidden().catch(()=>{});});
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{myTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderMyPage(true);if(myTab==='hidden')refreshHidden().catch(()=>{});if(myTab==='history')refreshHistory().catch(()=>{});if(myTab==='following'||myTab==='followers')loadFollows().then(()=>renderMyPage()).catch(()=>toast('关注列表加载失败'));});
   $('userChip').onclick=openUser;$('mobileUserBtn').onclick=openUser;$('editProfileBtn').onclick=openUser;$('saveUserBtn').onclick=saveProfile;$('cancelUser').onclick=closeUser;
   document.querySelectorAll('.avatar-choice').forEach(b=>b.onclick=()=>{document.querySelectorAll('.avatar-choice').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')});
   const aboutBtn = $('aboutBtn'); const aboutModal = $('aboutModal'); const closeAbout = $('closeAbout'); if(aboutBtn && aboutModal) aboutBtn.onclick=()=>aboutModal.classList.remove('hide'); if(closeAbout && aboutModal) closeAbout.onclick=()=>aboutModal.classList.add('hide');
@@ -945,15 +1116,35 @@ function bindEvents(){
   $('reportSubmit').onclick=submitReport;
   $('editPostCancel').onclick=()=>$('editPostModal').classList.add('hide');
   $('saveEditBtn').onclick=saveEditPost;
+  bindDetail();
   $('editImageInput').onchange=async e=>{await addEditImages(e.target.files);e.target.value=''};
+  // 第三阶段：消息 / 私信 / 关注 / 个人主页
+  $('bellBtn').onclick=openNotifPanel;$('mobileMsgBtn').onclick=openNotifPanel;
+  $('dmBtn').onclick=openDMPanel;$('mobileDmBtn').onclick=openDMPanel;
+  $('notifClose').onclick=closeNotifPanel;
+  $('userHomeClose').onclick=closeUserProfile;
+  $('uhPosts').addEventListener('click',e=>{const au=e.target.closest('[data-author]');if(au){openUserProfile(au.dataset.author);return}const b=e.target.closest('[data-act]');if(b){const act=b.dataset.act,uid=b.dataset.uid,id=b.dataset.id;if(act==='follow')toggleFollow(uid);else if(act==='dm')startDM(uid);else if(act==='report'){if(id)openReport(b.dataset.ctype||'post',id);else openReport('user',uid);}else if(act==='like')toggleLike(id);else if(act==='fav')toggleFav(id);else if(act==='comment')openPostDetail(id);else if(act==='edit')openEditPost(id);else if(act==='hide')hidePost(id);else if(act==='pin')togglePinPost(id);else if(act==='unpin')togglePinPost(id);else if(act==='restore')restorePost(id);else if(act==='delete')deletePost(id);return;}});
+  $('dmPanelClose').onclick=closeDMPanel;
+  $('dmBack').onclick=()=>{$('dmChat').classList.add('hide');$('dmList').classList.remove('hide')};
+  $('dmReportBtn').onclick=()=>{if(activeConvId)openDMReport(activeConvId,null)};
+  $('dmSend').onclick=sendDM;
+  $('dmInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendDM()}});
+  $('dmPhoto').onclick=()=>$('dmImageInput').click();
+  $('dmImageInput').onchange=async e=>{for(const f of e.target.files){try{const url=await uploadDMImage(f);pendingDMImages.push(url);}catch(e){toast('图片处理失败')}}e.target.value='';renderDMPreview();};
+  $('dmReportCancel').onclick=()=>$('dmReportModal').classList.add('hide');
+  $('dmReportSubmit').onclick=submitDMReport;
+  $('dmReportReasons').addEventListener('click',e=>{const r=e.target.closest('.report-reason');if(r){document.querySelectorAll('#dmReportReasons .report-reason').forEach(x=>x.classList.remove('selected'));r.classList.add('selected');$('dmReportStatus').textContent='';$('dmReportStatus').className='status';}});
+  // 桌面通知：申请权限后订阅 push
+  $('pushBtn').onclick=async()=>{try{if(!('Notification' in window)){$('pushStatus').textContent='当前浏览器不支持桌面通知';return;}if(!('serviceWorker' in navigator)||!('PushManager' in window)){$('pushStatus').textContent='当前环境不支持推送（需 HTTPS）';return;}const p=await Notification.requestPermission();if(p!=='granted'){$('pushStatus').textContent='已拒绝，将无法接收桌面通知';return;}$('pushStatus').textContent='正在订阅…';initPush();$('pushStatus').textContent=VAPID_PUBLIC_KEY?'已开启桌面通知 ✓':'已记录，但需先配置 VAPID 公钥';}catch(e){$('pushStatus').textContent='开启失败：'+(e.message||e);}};
 }
 
-function openUser(){if(!currentProfile)return;$('nickInput').value=currentProfile.nickname||'';$('nickStatus').textContent='当前昵称：'+(currentProfile.nickname||'');document.querySelectorAll('.avatar-choice').forEach(b=>b.classList.toggle('selected',b.dataset.avatar===currentProfile.avatar));$('userModal').classList.remove('hide');}
+function openUser(){if(!currentProfile)return;$('nickInput').value=currentProfile.nickname||'';$('nickStatus').textContent='当前昵称：'+(currentProfile.nickname||'');document.querySelectorAll('.avatar-choice').forEach(b=>b.classList.toggle('selected',b.dataset.avatar===currentProfile.avatar));$('bioInput').value=currentProfile.bio||'';$('gradeInput').value=currentProfile.grade||'';$('classInput').value=currentProfile.class_name||'';$('realNameInput').value=currentProfile.real_name||'';$('realNamePublic').checked=!!currentProfile.real_name_public;$('showFollows').checked=currentProfile.show_follows!==false;$('userModal').classList.remove('hide');}
 function closeUser(){$('userModal').classList.add('hide')}
 async function saveProfile(){
   const n=$('nickInput').value.trim();if(!n){$('nickStatus').textContent='⚠️ 昵称不能为空';$('nickStatus').className='status err';return}
   const a=document.querySelector('.avatar-choice.selected')?.dataset.avatar||currentProfile.avatar;
-  const {data,error}=await client.from('profiles').update({nickname:n,avatar:a}).eq('id',currentUser.id).select('*').single();
+  const patch={nickname:n,avatar:a,bio:$('bioInput').value.trim(),grade:$('gradeInput').value.trim(),class_name:$('classInput').value.trim(),real_name:$('realNameInput').value.trim(),real_name_public:$('realNamePublic').checked,show_follows:$('showFollows').checked};
+  const {data,error}=await client.from('profiles').update(patch).eq('id',currentUser.id).select('*').single();
   if(error){$('nickStatus').textContent='保存失败：'+error.message;$('nickStatus').className='status err';return;}
   currentProfile=data;const i=allProfiles.findIndex(x=>x.id===data.id);if(i>=0)allProfiles[i]=data;else allProfiles.push(data);updateUserUI();renderPosts();renderMyPage();closeUser();toast('资料已保存');
 }
@@ -1352,41 +1543,191 @@ function renderPosts(animate=true){
 function imageGrid(images){if(!images?.length)return '';return `<div class="image-grid c${Math.min(images.length,3)}">${images.map((s,i)=>`<div class="image-item" data-lightbox="${esc(s)}"><img src="${s}" alt="图片 ${i+1}" loading="lazy" decoding="async"></div>`).join('')}</div>`}
 function postHtml(p){
   const st=postStats(p.id),liked=isLiked(p.id),fav=isFav(p.id),me=p.author_id===currentUser.id,prof=profileFor(p.author_id),name=displayName(p.author_id,p.anonymous),av=prof?.avatar||'😀',admin=!!p.is_admin,canManage=me||isAdmin();
-  const cs=comments.filter(c=>c.post_id===p.id).sort((a,b)=>(b.is_pinned?1:0)-(a.is_pinned?1:0));
-  return `<article class="card post-card ${p.is_admin||p.is_pinned?'pinned':''}" data-id="${p.id}"><div class="post-head"><div class="avatar">${esc(av)}</div><div style="min-width:0;flex:1"><div class="post-user">${esc(name)} ${admin?'<span class="admin-badge">管理员</span>':''}</div>${timeHtml(p.created_at)}</div></div><div class="post-meta"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${p.is_admin?'<span class="pin">👑 管理员发布</span>':''}${p.is_pinned?'<span class="pin pin-top">📌 置顶</span>':''}${p.is_hidden?'<span class="hidden-badge">🚫 已隐藏</span>':''}</div><div class="post-content">${esc(p.content)}</div>${imageGrid(p.images)}<div class="actions"><button class="action ${liked?'like-on':''}" data-act="like" data-id="${p.id}">${liked?'❤️':'♡'} 点赞 ${st.likes}</button><button class="action ${fav?'fav-on':''}" data-act="fav" data-id="${p.id}">${fav?'⭐':'☆'} 收藏 ${st.favorites}</button><button class="action" data-act="comment" data-id="${p.id}">💬 评论 ${st.comments}</button>${!me?`<button class="action warn" data-act="report" data-id="${p.id}">🚨 举报</button>`:''}${canManage?`<button class="action" data-act="edit" data-id="${p.id}">✏️ 修改</button>`:''}${isAdmin()?`<button class="action" data-act="${p.is_pinned?'unpin':'pin'}" data-id="${p.id}">${p.is_pinned?'📌 取消置顶':'📌 置顶'}</button>`:''}${isAdmin()?`<button class="action warn" data-act="${p.is_hidden?'restore':'hide'}" data-id="${p.id}">${p.is_hidden?'♻️ 恢复':'👁️ 隐藏'}</button>`:''}${canManage?`<button class="action delete" data-act="delete" data-id="${p.id}">🗑️ 删除</button>`:''}</div><div class="comment-area">${cs.map(commentHtml).join('')}<div class="comment-preview" id="cp-${p.id}"></div><label class="anon" style="margin:5px 0 8px;display:inline-flex"><input type="checkbox" class="comment-anon" data-id="${p.id}"> 匿名评论</label><div class="comment-input-row"><button class="comment-photo" data-act="photo" data-id="${p.id}">📷</button><input type="file" accept="image/*" multiple class="hidden-file cinput-file" data-id="${p.id}"><input class="comment-input" id="ci-${p.id}" maxlength="2000" placeholder="写下你的评论…"><button class="comment-send" data-act="sendcomment" data-id="${p.id}">发送</button></div></div></article>`;
+  const authorAttr=p.anonymous?'':`data-author="${p.author_id}"`;
+  const socialBtns=me?'':`<button class="action" data-act="follow" data-uid="${p.author_id}">${followingSet.has(p.author_id)?'✅ 已关注':'➕ 关注'}</button><button class="action" data-act="dm" data-uid="${p.author_id}">💬 私信</button>`;
+  return `<article class="card post-card ${p.is_admin||p.is_pinned?'pinned':''}" data-id="${p.id}">
+    <div class="post-head"><div class="avatar" ${authorAttr}>${esc(av)}</div><div style="min-width:0;flex:1"><div class="post-user" ${authorAttr}>${esc(name)} ${admin?'<span class="admin-badge">管理员</span>':''}</div>${timeHtml(p.created_at)}</div></div>
+    <div class="post-meta"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${p.is_admin?'<span class="pin">👑 管理员发布</span>':''}${p.is_pinned?'<span class="pin pin-top">📌 置顶</span>':''}${p.is_hidden?'<span class="hidden-badge">🚫 已隐藏</span>':''}</div>
+    <div class="post-content preview">${esc(p.content)}</div>
+    ${imageGrid(p.images)}
+    <div class="post-open-hint">点击查看完整内容、评论与互动数据 →</div>
+    <div class="actions">
+      <button class="action ${liked?'like-on':''}" data-act="like" data-id="${p.id}">${liked?'❤️':'♡'} 点赞 ${st.likes}</button>
+      <button class="action ${fav?'fav-on':''}" data-act="fav" data-id="${p.id}">${fav?'⭐':'☆'} 收藏 ${st.favorites}</button>
+      <button class="action" data-act="comment" data-id="${p.id}">💬 评论 ${st.comments}</button>
+      ${!me?`<button class="action warn" data-act="report" data-id="${p.id}">🚨 举报</button>`:''}
+      ${socialBtns}
+      ${canManage?`<button class="action" data-act="edit" data-id="${p.id}">✏️ 修改</button>`:''}
+      ${isAdmin()?`<button class="action" data-act="${p.is_pinned?'unpin':'pin'}" data-id="${p.id}">${p.is_pinned?'📌 取消置顶':'📌 置顶'}</button>`:''}
+      ${isAdmin()?`<button class="action warn" data-act="${p.is_hidden?'restore':'hide'}" data-id="${p.id}">${p.is_hidden?'♻️ 恢复':'👁️ 隐藏'}</button>`:''}
+      ${canManage?`<button class="action delete" data-act="delete" data-id="${p.id}">🗑️ 删除</button>`:''}
+    </div>
+  </article>`;
 }
-function commentHtml(c){const prof=profileFor(c.author_id),name=displayName(c.author_id,!!c.anonymous),av=prof?.avatar||'😀';return `<div class="comment"><div class="comment-avatar">${esc(av)}</div><div class="comment-body"><div class="comment-head"><strong>${esc(name)}</strong>${c.is_admin?'<span class="admin-badge">管理员</span>':''}${c.is_pinned?'<span class="pin pin-top" style="font-size:11px">📌 置顶</span>':''}${timeHtml(c.created_at,'comment-time')}${c.author_id!==currentUser.id?`<button class="comment-del" data-act="report" data-ctype="comment" data-cid="${c.id}">举报</button>`:''}${isAdmin()?`<button class="comment-del" data-act="${c.is_pinned?'unpincomment':'pincomment'}" data-cid="${c.id}">${c.is_pinned?'取消置顶':'📌 置顶'}</button>`:''}${canDeleteComment(c)?`<button class="comment-del" data-act="delcomment" data-cid="${c.id}">删除</button>`:''}</div><div class="comment-text">${esc(c.content)}</div>${(c.images||[]).map(s=>`<div class="comment-img" data-lightbox="${esc(s)}"><img src="${s}" alt="评论图片" loading="lazy" decoding="async"></div>`).join('')}</div></div>`}
+function commentHtml(c){const prof=profileFor(c.author_id),name=displayName(c.author_id,!!c.anonymous),av=prof?.avatar||'😀';const aAttr=c.anonymous?'':`data-author="${c.author_id}"`;return `<div class="comment"><div class="comment-avatar" ${aAttr}>${esc(av)}</div><div class="comment-body"><div class="comment-head"><strong ${aAttr}>${esc(name)}</strong>${c.is_admin?'<span class="admin-badge">管理员</span>':''}${c.is_pinned?'<span class="pin pin-top" style="font-size:11px">📌 置顶</span>':''}${timeHtml(c.created_at,'comment-time')}${c.author_id!==currentUser.id?`<button class="comment-del" data-act="report" data-ctype="comment" data-cid="${c.id}">举报</button>`:''}${isAdmin()?`<button class="comment-del" data-act="${c.is_pinned?'unpincomment':'pincomment'}" data-cid="${c.id}">${c.is_pinned?'取消置顶':'📌 置顶'}</button>`:''}${canDeleteComment(c)?`<button class="comment-del" data-act="delcomment" data-cid="${c.id}">删除</button>`:''}</div><div class="comment-text">${esc(c.content)}</div>${(c.images||[]).map(s=>`<div class="comment-img" data-lightbox="${esc(s)}"><img src="${s}" alt="评论图片" loading="lazy" decoding="async"></div>`).join('')}</div></div>`}
 
 // 事件委托：feed 内的所有点击/选择事件只在容器上绑定一次，避免每次重建信息流后重绑几百个监听器
 let feedDelegated=false;
 function bindFeed(){
   if(feedDelegated)return;feedDelegated=true;
-  const list=document.getElementById('postList');if(!list)return;
-  list.addEventListener('click',onFeedClick);
-  list.addEventListener('change',onFeedChange);
+  const list=document.getElementById('postList');
+  if(list){list.addEventListener('click',onFeedClick);list.addEventListener('change',onFeedChange);}
+  // “我的”页（浏览历史等）同样使用 postHtml 卡片，委托同一套点击逻辑
+  const myList=document.getElementById('myContentList');
+  if(myList)myList.addEventListener('click',onFeedClick);
 }
 function onFeedClick(e){
   const lb=e.target.closest('[data-lightbox]');
   if(lb){openLightbox(lb.dataset.lightbox);return;}
-  const b=e.target.closest('[data-act]');if(!b)return;
-  const id=b.dataset.id;
-  switch(b.dataset.act){
-    case 'like':toggleLike(id);break;
-    case 'fav':toggleFav(id);break;
-    case 'delete':deletePost(id);break;
-    case 'sendcomment':sendComment(id);break;
-    case 'photo':{const f=document.querySelector('.cinput-file[data-id="'+id+'"]');if(f)f.click();break;}
-    case 'delcomment':deleteComment(b.dataset.cid);break;
-    case 'report':openReport(b.dataset.ctype||'post',b.dataset.cid||id);break;
-    case 'edit':openEditPost(id);break;
-    case 'pin':togglePinPost(id);break;
-    case 'unpin':togglePinPost(id);break;
-    case 'hide':hidePost(id);break;
-    case 'restore':restorePost(id);break;
-    case 'pincomment':togglePinComment(b.dataset.cid);break;
-    case 'unpincomment':togglePinComment(b.dataset.cid);break;
-    case 'loadmore':loadMorePosts();break;
+  const b=e.target.closest('[data-act]');
+  if(b){
+    const id=b.dataset.id;
+    switch(b.dataset.act){
+      case 'like':toggleLike(id);break;
+      case 'fav':toggleFav(id);break;
+      case 'delete':deletePost(id);break;
+      case 'sendcomment':sendComment(id);break;
+      case 'photo':{const f=document.querySelector('.cinput-file[data-id="'+id+'"]');if(f)f.click();break;}
+      case 'delcomment':deleteComment(b.dataset.cid);break;
+      case 'report':openReport(b.dataset.ctype||'post',b.dataset.cid||id);break;
+      case 'edit':openEditPost(id);break;
+      case 'pin':togglePinPost(id);break;
+      case 'unpin':togglePinPost(id);break;
+      case 'hide':hidePost(id);break;
+      case 'restore':restorePost(id);break;
+      case 'pincomment':togglePinComment(b.dataset.cid);break;
+      case 'unpincomment':togglePinComment(b.dataset.cid);break;
+      case 'loadmore':loadMorePosts();break;
+      case 'comment':openPostDetail(id);break;
+    }
+    return;
   }
+  // 点击作者（非匿名）→ 进入其个人主页
+  const au=e.target.closest('[data-author]');
+  if(au){openUserProfile(au.dataset.author);return;}
+  // 点击卡片其它区域（正文/图片/头部）→ 进入详情页
+  const card=e.target.closest('.post-card');
+  if(card&&card.dataset.id)openPostDetail(card.dataset.id);
+}
+
+// ===== 帖子详情页（覆盖层） =====
+function openPostDetail(id){
+  const p=posts.find(x=>x.id===id);if(!p)return;
+  detailOpen=true;detailPostId=id;
+  renderDetail(p);
+  $('postDetail').classList.remove('hide');
+  document.body.style.overflow='hidden';
+  recordView(id);
+  if(comments.some(c=>c.post_id===id))renderDetailComments(id,false);
+}
+function closePostDetail(){
+  detailOpen=false;detailPostId=null;
+  $('postDetail').classList.add('hide');
+  document.body.style.overflow='';
+}
+function renderDetail(p){
+  const st=postStats(p.id),liked=isLiked(p.id),fav=isFav(p.id),me=p.author_id===currentUser.id,prof=profileFor(p.author_id),name=displayName(p.author_id,p.anonymous),av=prof?.avatar||'😀',admin=!!p.is_admin,canManage=me||isAdmin();
+  $('detailBody').innerHTML=`<div class="card detail-post">
+    <div class="post-head"><div class="avatar">${esc(av)}</div><div style="min-width:0;flex:1"><div class="post-user">${esc(name)} ${admin?'<span class="admin-badge">管理员</span>':''}</div>${timeHtml(p.created_at)}</div></div>
+    <div class="post-meta"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${p.is_admin?'<span class="pin">👑 管理员发布</span>':''}${p.is_pinned?'<span class="pin pin-top">📌 置顶</span>':''}${p.is_hidden?'<span class="hidden-badge">🚫 已隐藏</span>':''}</div>
+    <div class="post-content">${esc(p.content)}</div>
+    ${imageGrid(p.images)}
+    <div class="actions">
+      <button class="action ${liked?'like-on':''}" data-act="like" data-id="${p.id}">${liked?'❤️':'♡'} 点赞 ${st.likes}</button>
+      <button class="action ${fav?'fav-on':''}" data-act="fav" data-id="${p.id}">${fav?'⭐':'☆'} 收藏 ${st.favorites}</button>
+      <button class="action" data-act="toggle-comments" data-id="${p.id}">💬 查看评论 ${st.comments}</button>
+      ${!me?`<button class="action warn" data-act="report" data-id="${p.id}">🚨 举报</button>`:''}
+      ${canManage?`<button class="action" data-act="edit" data-id="${p.id}">✏️ 修改</button>`:''}
+      ${isAdmin()?`<button class="action" data-act="${p.is_pinned?'unpin':'pin'}" data-id="${p.id}">${p.is_pinned?'📌 取消置顶':'📌 置顶'}</button>`:''}
+      ${isAdmin()?`<button class="action warn" data-act="${p.is_hidden?'restore':'hide'}" data-id="${p.id}">${p.is_hidden?'♻️ 恢复':'👁️ 隐藏'}</button>`:''}
+      ${canManage?`<button class="action delete" data-act="delete" data-id="${p.id}">🗑️ 删除</button>`:''}
+    </div>
+    <div class="detail-stats"><span><b>${p.views||0}</b>浏览</span><span><b>${st.likes}</b>点赞</span><span><b>${st.favorites}</b>收藏</span><span><b>${st.comments}</b>评论</span></div>
+    <div class="detail-comments">
+      <span class="detail-comment-toggle" data-act="toggle-comments" data-id="${p.id}">💬 查看评论 ${st.comments}</span>
+      <div class="detail-comment-list" id="detailComments" style="display:none"></div>
+      <div class="detail-comment-box" id="detailCommentBox" style="display:none">
+        <label class="anon" style="display:inline-flex;margin:0 0 8px"><input type="checkbox" class="comment-anon" data-id="${p.id}"> 匿名评论</label>
+        <div class="preview-list" id="detailPreview"></div>
+        <div class="comment-input-row"><button class="comment-photo" data-act="photo" data-id="${p.id}">📷</button><input type="text" class="comment-input" id="ci-${p.id}" placeholder="写下你的评论…" maxlength="1000"><button class="comment-send primary-btn" data-act="sendcomment" data-id="${p.id}">发送</button></div>
+        <input type="file" accept="image/*" multiple class="hide cinput-file" data-id="${p.id}">
+      </div>
+    </div>
+  </div>`;
+}
+function toggleDetailComments(id){
+  const list=$('detailComments'),box=$('detailCommentBox');
+  const show=list.style.display==='none';
+  list.style.display=show?'block':'none';
+  box.style.display=show?'block':'none';
+  const t=document.querySelector('[data-act="toggle-comments"][data-id="'+id+'"]');
+  if(t)t.textContent='💬 '+(show?'收起评论':'查看评论 '+postStats(id).comments);
+  if(show)renderDetailComments(id,true);
+}
+async function renderDetailComments(id,expand){
+  const box=$('detailComments');if(!box)return;
+  let cs=comments.filter(c=>c.post_id===id).sort((a,b)=>(b.is_pinned?1:0)-(a.is_pinned?1:0));
+  if(expand&&!cs.length){try{const {data}=await client.from('comments').select('*').eq('post_id',id).order('created_at');if(data)comments=[...comments,...data];cs=comments.filter(c=>c.post_id===id).sort((a,b)=>(b.is_pinned?1:0)-(a.is_pinned?1:0));}catch(e){}}
+  box.innerHTML=cs.length?cs.map(commentHtml).join(''):'<div style="color:var(--muted);font-size:13px;padding:6px 0">还没有评论，来抢沙发～</div>';
+}
+async function recordView(id){
+  const p=posts.find(x=>x.id===id);if(!p)return;
+  if(!viewedSet.has(id)){viewedSet.add(id);p.views=(p.views||0)+1;updateDetailStats(id);}
+  if(!currentUser)return;
+  try{await client.from('view_history').upsert({user_id:currentUser.id,post_id:id,created_at:new Date().toISOString()},{onConflict:'user_id,post_id'});}catch(e){console.warn('记录浏览失败',e)}
+}
+function updateDetailStats(id){
+  if(!detailOpen||detailPostId!==id)return;
+  const p=posts.find(x=>x.id===id);if(!p)return;
+  const st=postStats(id);const el=document.querySelector('#detailBody .detail-stats');if(!el)return;
+  el.innerHTML=`<span><b>${p.views||0}</b>浏览</span><span><b>${st.likes}</b>点赞</span><span><b>${st.favorites}</b>收藏</span><span><b>${st.comments}</b>评论</span>`;
+}
+function renderDetailCommentPreview(id){
+  const e=$('detailPreview');if(!e)return;const a=pendingCommentImages[id]||[];
+  e.innerHTML=a.map((s,i)=>`<div class="preview"><img src="${s}"><button class="remove-img" data-i="${i}">×</button></div>`).join('');
+  e.querySelectorAll('.remove-img').forEach(b=>b.onclick=()=>{a.splice(+b.dataset.i,1);renderDetailCommentPreview(id)});
+}
+let detailDelegated=false;
+function bindDetail(){
+  if(detailDelegated)return;detailDelegated=true;
+  const body=$('detailBody');
+  body.addEventListener('click',e=>{
+    const lb=e.target.closest('[data-lightbox]');if(lb){openLightbox(lb.dataset.lightbox);return;}
+    const b=e.target.closest('[data-act]');if(!b)return;
+    const act=b.dataset.act,id=b.dataset.id;
+    if(act==='toggle-comments'){toggleDetailComments(id);return;}
+    const au=e.target.closest('[data-author]');if(au){openUserProfile(au.dataset.author);return;}
+    switch(act){
+      case 'like':toggleLike(id);break;
+      case 'fav':toggleFav(id);break;
+      case 'delete':deletePost(id);break;
+      case 'sendcomment':sendComment(id);break;
+      case 'photo':{const f=body.querySelector('.cinput-file[data-id="'+id+'"]');if(f)f.click();break;}
+      case 'delcomment':deleteComment(b.dataset.cid);break;
+      case 'report':openReport(b.dataset.ctype||'post',b.dataset.cid||id);break;
+      case 'edit':openEditPost(id);break;
+      case 'pin':togglePinPost(id);break;
+      case 'unpin':togglePinPost(id);break;
+      case 'hide':hidePost(id);break;
+      case 'restore':restorePost(id);break;
+      case 'pincomment':togglePinComment(b.dataset.cid);break;
+      case 'unpincomment':togglePinComment(b.dataset.cid);break;
+    }
+  });
+  body.addEventListener('change',e=>{
+    const inp=e.target.closest('.cinput-file');if(!inp)return;
+    const id=inp.dataset.id;pendingCommentImages[id]=pendingCommentImages[id]||[];
+    (async()=>{for(const f of inp.files){if(pendingCommentImages[id].length>=3)break;try{const blob=await compressImage(f,800,.72);pendingCommentImages[id].push(await uploadImage(blob))}catch{}}inp.value='';renderDetailCommentPreview(id);})();
+  });
+  $('detailClose').onclick=closePostDetail;
+}
+async function refreshHistory(){
+  try{
+    const {data,error}=await client.from('view_history').select('*, posts(*)').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(200);
+    if(error)throw error;
+    myHistory=data||[];
+    if(myTab==='history')renderMyPage();
+  }catch(e){console.warn('读取浏览历史失败（请先运行 feed-history-setup.sql）',e);}
 }
 async function onFeedChange(e){
   const inp=e.target.closest('.cinput-file');if(!inp)return;
@@ -1400,12 +1741,9 @@ function renderCommentPreview(id){const e=$('cp-'+id);if(!e)return;const a=pendi
 function updatePostActions(id){
   invalidateStats();
   const st=postStats(id);
-  const likeBtn=document.querySelector(`[data-act="like"][data-id="${id}"]`);
-  const favBtn=document.querySelector(`[data-act="fav"][data-id="${id}"]`);
-  const commentBtn=document.querySelector(`[data-act="comment"][data-id="${id}"]`);
-  if(likeBtn){const on=isLiked(id);likeBtn.classList.toggle('like-on',on);likeBtn.textContent=`${on?'❤️':'♡'} 点赞 ${st.likes}`;}
-  if(favBtn){const on=isFav(id);favBtn.classList.toggle('fav-on',on);favBtn.textContent=`${on?'⭐':'☆'} 收藏 ${st.favorites}`;}
-  if(commentBtn)commentBtn.textContent=`💬 评论 ${st.comments}`;
+  document.querySelectorAll(`[data-act="like"][data-id="${id}"]`).forEach(b=>{const on=isLiked(id);b.classList.toggle('like-on',on);b.textContent=`${on?'❤️':'♡'} 点赞 ${st.likes}`;});
+  document.querySelectorAll(`[data-act="fav"][data-id="${id}"]`).forEach(b=>{const on=isFav(id);b.classList.toggle('fav-on',on);b.textContent=`${on?'⭐':'☆'} 收藏 ${st.favorites}`;});
+  document.querySelectorAll(`[data-act="comment"][data-id="${id}"]`).forEach(b=>{b.textContent=`💬 评论 ${st.comments}`;});
 }
 // 只重建单条帖子卡片（用于发评论/删评论后局部更新）
 function rerenderPost(id){
@@ -1475,7 +1813,7 @@ async function sendComment(id){
   if(error){toast('评论失败：'+error.message);return}
   input.value='';pendingCommentImages[id]=[];
   if(data)comments=[...comments,data];
-  rerenderPost(id);invalidateStats();if(activePage==='my')renderMyPage();toast('评论成功');
+  rerenderPost(id);invalidateStats();if(detailOpen&&detailPostId===id){renderDetailComments(id,false);const t=document.querySelector('[data-act="toggle-comments"][data-id="'+id+'"]');if(t)t.textContent='💬 查看评论 '+postStats(id).comments;updateDetailStats(id);}if(activePage==='my')renderMyPage();toast('评论成功');
 }
 function openLightbox(src){$('lightboxImg').src=src;$('lightbox').classList.remove('hide')}
 // 单独拉取“我的”数据：分页后全局 posts 不完整，我的帖子/评论/点赞/收藏必须按需查询，不受信息流分页影响
@@ -1535,12 +1873,230 @@ function renderMyPage(animate=false){
   if(myTab==='posts'){const a=myPosts;box.innerHTML=a.length?a.map(p=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><button class="action delete" data-myact="delete" data-id="${p.id}">🗑️ 删除</button></div><div class="post-content" style="margin-top:10px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div>${timeHtml(p.created_at)}</div>`).join(''):'<div class="empty"><span class="emoji">📝</span>你还没有发布过帖子哦</div>';
   }else if(myTab==='comments'){const a=myComments;box.innerHTML=a.length?a.map(c=>`<div class="card" style="margin-bottom:12px"><div style="font-size:12px;color:var(--muted);margin-bottom:7px">回复帖子：${esc(myParentPosts[c.post_id]?.content||'[图片帖]')}</div><div style="background:#f8fafc;border-radius:9px;padding:10px;font-size:13px;color:var(--sub)">${esc(c.content)||'[图片评论]'}</div><div style="display:flex;align-items:center;margin-top:7px">${timeHtml(c.created_at)}<button class="action delete" style="margin-left:auto" data-myact="delcomment" data-id="${c.id}">🗑️ 删除</button></div></div>`).join(''):'<div class="empty"><span class="emoji">💬</span>你还没有发表过评论哦</div>';
 }else if(myTab==='hidden'){const a=hiddenPosts;box.innerHTML=a.length?a.map(p=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${isAdmin()?`<button class="mini" data-myact="restore" data-id="${p.id}">♻️ 恢复</button>`:''}</div><div class="post-content" style="margin-top:10px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><div style="display:flex;align-items:center;margin-top:6px"><span style="font-size:12px;color:var(--muted)">作者：${esc(displayName(p.author_id,p.anonymous))}</span>${timeHtml(p.created_at)}</div></div>`).join(''):'<div class="empty"><span class="emoji">🚫</span>没有隐藏的帖子</div>'
+  }else if(myTab==='history'){const a=myHistory;box.innerHTML=a.length?a.map(h=>{const p=h.posts;return p?`<div style="margin-bottom:14px"><div class="history-time">浏览于 ${timeHtml(h.created_at)}</div>${postHtml(p)}</div>`:''}).filter(Boolean).join(''):'<div class="empty"><span class="emoji">🕘</span>你还没有浏览过任何帖子</div>';}else if(myTab==='following'){const a=[...followingSet];box.innerHTML=a.length?a.map(uid=>userRowHtml(uid)).join(''):'<div class="empty"><span class="emoji">➕</span>你还没有关注任何人</div>';
+  }else if(myTab==='followers'){const a=[...followerSet];box.innerHTML=a.length?a.map(uid=>userRowHtml(uid,true)).join(''):'<div class="empty"><span class="emoji">👥</span>还没有人关注你</div>';
   }else{const ids=(myTab==='likes'?likes:favorites).filter(x=>x.user_id===currentUser.id).map(x=>x.post_id);const arr=ids.map(id=>myParentPosts[id]).filter(Boolean);box.innerHTML=arr.length?arr.map(p=>`<div class="card" style="margin-bottom:12px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><div class="post-content" style="margin-top:9px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><button class="action ${myTab==='likes'?'like-on':'fav-on'}" data-myact="${myTab==='likes'?'unlike':'unfav'}" data-id="${p.id}">${myTab==='likes'?'❤️ 取消点赞':'⭐ 取消收藏'}</button></div>`).join(''):`<div class="empty"><span class="emoji">${myTab==='likes'?'❤️':'⭐'}</span>${myTab==='likes'?'你还没有点赞过帖子哦':'你还没有收藏过帖子哦'}</div>`}
   if(animate){box.classList.remove('tab-panel-enter');void box.offsetWidth;box.classList.add('tab-panel-enter');box.addEventListener('animationend',()=>box.classList.remove('tab-panel-enter'),{once:true});}
   else box.classList.remove('tab-panel-enter');
   box.querySelectorAll('[data-myact="delete"]').forEach(b=>b.onclick=()=>deletePost(b.dataset.id));box.querySelectorAll('[data-myact="delcomment"]').forEach(b=>b.onclick=()=>deleteComment(b.dataset.id));box.querySelectorAll('[data-myact="unlike"]').forEach(b=>b.onclick=()=>toggleLike(b.dataset.id));box.querySelectorAll('[data-myact="unfav"]').forEach(b=>b.onclick=()=>toggleFav(b.dataset.id));box.querySelectorAll('[data-myact="restore"]').forEach(b=>b.onclick=()=>restorePost(b.dataset.id));
+  box.querySelectorAll('[data-author]').forEach(el=>el.onclick=()=>openUserProfile(el.dataset.author));
+  box.querySelectorAll('[data-openuser]').forEach(b=>b.onclick=()=>openUserProfile(b.dataset.openuser));
+  box.querySelectorAll('[data-follow]').forEach(b=>b.onclick=()=>toggleFollow(b.dataset.follow));
 }
 
+
+// ===================== 第三阶段：关注 / 个人主页 / 私信 / 通知 =====================
+function isFollowing(uid){return followingSet.has(uid)}
+async function loadFollows(){
+  try{
+    const [{data:f1},{data:f2}]=await Promise.all([
+      client.from('follows').select('following_id').eq('follower_id',currentUser.id),
+      client.from('follows').select('follower_id').eq('following_id',currentUser.id)
+    ]);
+    followingSet=new Set((f1||[]).map(x=>x.following_id));
+    followerSet=new Set((f2||[]).map(x=>x.follower_id));
+  }catch(e){console.warn('读取关注失败',e)}
+}
+async function toggleFollow(uid){
+  if(uid===currentUser.id){toast('不能关注自己');return}
+  const following=followingSet.has(uid);
+  try{
+    if(following){const {error}=await client.from('follows').delete().eq('follower_id',currentUser.id).eq('following_id',uid);if(error)throw error;followingSet.delete(uid);}
+    else{const {error}=await client.from('follows').insert({follower_id:currentUser.id,following_id:uid});if(error)throw error;followingSet.add(uid);}
+    updateUserUI();renderPosts();renderMyPage();
+    if(!$('userHome').classList.contains('hide'))renderUserProfile(uid,profileFor(uid));
+    toast(following?'已取消关注':'已关注');
+  }catch(e){toast('操作失败：'+e.message)}
+}
+function openUserProfile(uid){
+  if(!uid||uid===currentUser.id){switchPage('my');return;}
+  renderUserProfile(uid,profileFor(uid));
+  $('userHome').classList.remove('hide');document.body.style.overflow='hidden';
+}
+function closeUserProfile(){$('userHome').classList.add('hide');document.body.style.overflow='';}
+async function renderUserProfile(uid,prof){
+  prof=prof||profileFor(uid)||{id:uid,nickname:'同学',avatar:'😀'};
+  $('uhAvatar').textContent=prof.avatar||'😀';
+  $('uhNick').textContent=prof.nickname||'同学';
+  $('uhMeta').textContent=[prof.grade,prof.class_name].filter(Boolean).join(' · ')||'思茅一中 · 在校学生';
+  $('uhBio').textContent=prof.bio||'这个人很懒，什么都没写～';
+  try{
+    const [{count:f},{count:g}]=await Promise.all([
+      client.from('follows').select('*',{count:'exact',head:true}).eq('follower_id',uid),
+      client.from('follows').select('*',{count:'exact',head:true}).eq('following_id',uid)
+    ]);
+    $('uhStats').innerHTML=`<span><b>${f||0}</b>关注</span><span><b>${g||0}</b>粉丝</span>`;
+  }catch(e){$('uhStats').innerHTML='';}
+  const me=uid===currentUser.id;
+  const following=followingSet.has(uid);
+  $('uhActions').innerHTML=me?'':`<button class="mini" data-uhact="dm" data-uid="${uid}">✉️ 私信</button><button class="mini ${following?'':'primary'}" data-uhact="follow" data-uid="${uid}">${following?'✅ 已关注':'➕ 关注'}</button><button class="mini" data-uhact="report" data-uid="${uid}">🚨 举报</button>`;
+  $('uhActions').querySelectorAll('[data-uhact]').forEach(b=>b.onclick=()=>{const a=b.dataset.uhact;if(a==='follow')toggleFollow(uid);else if(a==='dm')startDM(uid);else if(a==='report')openReport('user',uid);});
+  try{
+    const {data}=await client.from('posts').select('*').eq('author_id',uid).eq('is_hidden',false).order('created_at',{ascending:false}).limit(50);
+    $('uhPosts').innerHTML=data&&data.length?data.map(postHtml).join(''):'<div class="empty"><span class="emoji">📭</span>TA还没有发布过公开动态</div>';
+  }catch(e){$('uhPosts').innerHTML='<div class="empty">加载失败</div>';}
+}
+function userRowHtml(uid,followersView){
+  const p=allProfiles.find(x=>x.id===uid)||{id:uid,nickname:'同学',avatar:'😀'};
+  const mutual=followingSet.has(uid);
+  const label=followersView?(mutual?'✅ 已关注':'➕ 关注'):'取消关注';
+  return `<div class="follow-row" data-uid="${uid}"><div class="avatar" data-author="${uid}">${esc(p.avatar||'😀')}</div><div class="follow-info" data-author="${uid}"><div class="follow-name">${esc(p.nickname||'同学')}</div><div class="follow-sub">${[p.grade,p.class_name].filter(Boolean).join(' · ')||''}</div></div><button class="mini ${mutual?'':'primary'}" data-follow="${uid}">${label}</button></div>`;
+}
+// ---- 通知 ----
+async function loadNotifications(){
+  try{
+    const {data,error}=await client.from('notifications').select('*').order('created_at',{ascending:false}).limit(100);
+    if(error)throw error;
+    notifications=data||[];myUnread=notifications.filter(n=>!n.is_read).length;updateBell();
+    if(!$('notifPanel').classList.contains('hide'))renderNotifications();
+  }catch(e){console.warn('读取通知失败',e)}
+}
+function updateBell(){const b=$('bellBadge');if(!b)return;if(myUnread>0){b.textContent=myUnread>99?'99+':myUnread;b.classList.remove('hide');}else b.classList.add('hide');}
+function openNotifPanel(){loadNotifications().catch(()=>{});$('notifPanel').classList.remove('hide');}
+function closeNotifPanel(){$('notifPanel').classList.add('hide');}
+function renderNotifications(){
+  const box=$('notifList');
+  if(!notifications.length){box.innerHTML='<div class="empty"><span class="emoji">🔔</span>暂时没有通知</div>';return;}
+  const IC={comment:'💬',reply:'↩️',post_hidden:'👁️',post_deleted:'🗑️',new_follower:'➕',new_message:'✉️',report_admin:'🚨'};
+  box.innerHTML=notifications.map(n=>{
+    const icon=IC[n.type]||'🔔';
+    return `<div class="notif-item ${n.is_read?'':'unread'}" data-nid="${n.id}" data-type="${n.type}" data-post="${n.ref_post_id||''}" data-conv="${n.ref_conversation_id||''}">\n`
+      +`<div class="notif-ic">${icon}</div>\n`
+      +`<div class="notif-body"><div class="notif-title">${esc(n.title)}</div><div class="notif-text">${esc(n.body||'')}</div><div class="notif-time">${timeHtml(n.created_at)}</div></div>\n`
+      +(n.is_read?'':'<span class="notif-dot"></span>')+`</div>`;
+  }).join('');
+  box.querySelectorAll('.notif-item').forEach(el=>el.onclick=()=>onNotifClick(el));
+}
+async function onNotifClick(el){
+  const id=el.dataset.nid,postId=el.dataset.post,convId=el.dataset.conv;
+  if(el.classList.contains('unread')){
+    await client.from('notifications').update({is_read:true}).eq('id',id).then(()=>{const i=notifications.findIndex(x=>x.id===id);if(i>=0)notifications[i].is_read=true;myUnread=Math.max(0,myUnread-1);updateBell();el.classList.remove('unread');el.querySelector('.notif-dot')?.remove();}).catch(()=>{});
+  }
+  if(convId){closeNotifPanel();openDMPanel().then(()=>openDMChat(convId));return;}
+  if(postId){closeNotifPanel();openPostDetail(postId);return;}
+  closeNotifPanel();
+}
+// ---- 私信 ----
+async function openDMPanel(){await loadConversations();$('dmPanel').classList.remove('hide');}
+function closeDMPanel(){$('dmPanel').classList.add('hide');activeConvId=null;}
+async function loadConversations(){
+  try{const {data,error}=await client.from('conversations').select('*').order('created_at',{ascending:false}).limit(100);if(error)throw error;conversations=data||[];}catch(e){conversations=conversations||[];console.warn('读取会话失败',e);}
+  renderConversations();
+}
+function renderConversations(){
+  const box=$('dmList');
+  if(!conversations.length){box.innerHTML='<div class="empty"><span class="emoji">💬</span>还没有私信，去别人的主页点“私信”开始聊天吧</div>';return;}
+  box.innerHTML=conversations.map(c=>{
+    const other=c.user_a===currentUser.id?c.user_b:c.user_a;
+    return `<div class="dm-item" data-conv="${c.id}"><div class="avatar">${esc(profileFor(other)?.avatar||'😀')}</div><div class="dm-item-body"><div class="dm-item-name">${esc(displayName(other,false))}</div><div class="dm-item-sub">${c.unlocked?'':'🔒 '}私信会话</div></div></div>`;
+  }).join('');
+  box.querySelectorAll('.dm-item').forEach(el=>el.onclick=()=>openDMChat(el.dataset.conv));
+}
+function otherOf(c){return c.user_a===currentUser.id?c.user_b:c.user_a}
+async function ensureConversation(otherId){
+  if(otherId===currentUser.id)throw new Error('不能给自己发私信');
+  const ua=currentUser.id<otherId?currentUser.id:otherId;
+  const ub=currentUser.id<otherId?otherId:currentUser.id;
+  const {data,error}=await client.from('conversations').upsert({user_a:ua,user_b:ub,unlocked:false},{onConflict:'user_a,user_b'}).select('*').single();
+  if(error)throw error;return data;
+}
+async function startDM(otherId){
+  try{const c=await ensureConversation(otherId);if(!conversations.some(x=>x.id===c.id))conversations.unshift(c);await openDMPanel();await openDMChat(c.id);}catch(e){toast('无法开始私信：'+e.message);}
+}
+async function openDMChat(convId){
+  activeConvId=convId;
+  let c=conversations.find(x=>x.id===convId);
+  if(!c){const {data}=await client.from('conversations').select('*').eq('id',convId).single();c=data;}
+  if(!c)return;
+  $('dmChatName').textContent=displayName(otherOf(c),false);
+  $('dmChat').classList.remove('hide');$('dmList').classList.add('hide');
+  await loadMessages(convId);
+  client.from('messages').update({read_at:new Date().toISOString()}).eq('conversation_id',convId).eq('sender_id',otherOf(c)).is('read_at',null).then(()=>{}).catch(()=>{});
+}
+async function loadMessages(convId){
+  try{const {data,error}=await client.from('messages').select('*').eq('conversation_id',convId).order('created_at',{ascending:true}).limit(200);if(error)throw error;renderChat(convId,data||[]);}catch(e){}
+}
+function renderChat(convId,msgs){
+  const box=$('dmMessages');
+  if(!msgs.length){box.innerHTML='<div class="dm-empty">还没有消息，打个招呼吧～</div>';return;}
+  box.innerHTML=msgs.map(m=>{
+    const mine=m.sender_id===currentUser.id;
+    const img=m.image_url?`<img class="dm-img" src="${esc(m.image_url)}" data-lightbox="${esc(m.image_url)}">`:'';
+    return `<div class="dm-msg ${mine?'mine':''}">${img}${m.content?`<div class="dm-bubble">${esc(m.content)}</div>`:''}<div class="dm-time">${timeHtml(m.created_at,'comment-time')}</div></div>`;
+  }).join('');
+  box.scrollTop=box.scrollHeight;
+}
+function renderDMPreview(){const e=$('dmPreview');if(!e)return;e.innerHTML=(pendingDMImages||[]).map((s,i)=>`<div class="preview"><img src="${s}"><button class="remove-img" data-i="${i}">×</button></div>`).join('');e.querySelectorAll('.remove-img').forEach(b=>b.onclick=()=>{pendingDMImages.splice(+b.dataset.i,1);renderDMPreview()});}
+async function sendDM(){
+  if(!activeConvId)return;
+  const input=$('dmInput'),text=input.value.trim(),imgs=pendingDMImages||[];
+  if(!text&&!imgs.length)return;
+  const btn=$('dmSend');btn.disabled=true;btn.textContent='发送中…';
+  try{
+    // 首次私信需先确保会话存在
+    if(!conversations.some(c=>c.id===activeConvId)){const other=otherOf(conversations.find(c=>c.id===activeConvId)||{user_a:'',user_b:''});}
+    const {error}=await client.from('messages').insert({conversation_id:activeConvId,sender_id:currentUser.id,content:text||'',image_url:imgs[0]||null});
+    if(error)throw error;
+    input.value='';pendingDMImages=[];renderDMPreview();
+    loadMessages(activeConvId);
+  }catch(e){
+    const msg=String(e.message||'');
+    if(msg.includes('rate_limited'))toast('⏳ '+msg.replace('rate_limited: ',''));
+    else toast('发送失败：'+msg);
+  }finally{btn.disabled=false;btn.textContent='发送'}
+}
+async function uploadDMImage(file){
+  const blob=await compressImage(file,1000,.72);
+  const path=`${currentUser.id}/${activeConvId||'x'}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+  const {data,error}=await client.storage.from('dm-images').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+  if(error)throw error;
+  const r=await client.storage.from('dm-images').createSignedUrl(data.path,31536000);
+  if(r.error)throw r.error;
+  return r.data.signedUrl;
+}
+function openDMReport(convId,msgId){dmReportTarget={convId,msgId};$('dmReportReasons').innerHTML=REPORT_REASONS.map(r=>`<button type="button" class="report-reason" data-label="${esc(r.l)}">${r.l}</button>`).join('');document.querySelectorAll('#dmReportReasons .report-reason').forEach(x=>x.classList.remove('selected'));$('dmReportDetail').value='';$('dmReportStatus').textContent='请选择举报原因';$('dmReportStatus').className='status';$('dmReportModal').classList.remove('hide');}
+async function submitDMReport(){
+  const sel=document.querySelector('#dmReportReasons .report-reason.selected');
+  if(!sel){$('dmReportStatus').textContent='⚠️ 请先选择举报原因';$('dmReportStatus').className='status err';return;}
+  const {error}=await client.from('dm_reports').insert({reporter_id:currentUser.id,conversation_id:dmReportTarget.convId,message_id:dmReportTarget.msgId,reason:sel.dataset.label,detail:$('dmReportDetail').value.trim()});
+  if(error){$('dmReportStatus').textContent='失败：'+error.message;$('dmReportStatus').className='status err';return;}
+  $('dmReportModal').classList.add('hide');toast('已举报，管理员会尽快处理');
+}
+// ---- Realtime + 桌面推送 ----
+function subscribeRealtime(){
+  if(!client||!currentUser)return;
+  try{
+    client.channel('notif-'+currentUser.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'recipient_id=eq.'+currentUser.id},(payload)=>{
+      loadNotifications().catch(()=>{});
+      const n=payload.new;if(n&&n.type==='new_message'&&document.hidden)showBrowserNotify(n.title,n.body);
+    }).subscribe();
+    client.channel('dm-'+currentUser.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},(payload)=>{
+      const m=payload.new;if(!m)return;
+      if(activeConvId&&m.conversation_id===activeConvId)loadMessages(activeConvId);
+      loadConversations().catch(()=>{});
+    }).subscribe();
+  }catch(e){console.warn('Realtime 订阅失败',e)}
+}
+function showBrowserNotify(title,body){
+  try{if(!('Notification' in window))return;if(Notification.permission==='granted')new Notification('文庙论坛 · '+title,{body:body||'',icon:'data:image/png;base64,iVBORwKGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='})}catch(e){}
+}
+// 桌面推送：部署到 GitHub Pages 前，请把下面替换为你的 VAPID 公钥（用 web-push 生成：npx web-push generate-vapid-keys）
+const VAPID_PUBLIC_KEY='';
+function initPush(){
+  try{
+    if(!('serviceWorker' in navigator)||!('PushManager' in window))return;
+    navigator.serviceWorker.register('sw.js').then(async reg=>{
+      const sub=await reg.pushManager.getSubscription();
+      if(sub){await savePushSub(sub);return;}
+      if(!('Notification' in window)||Notification.permission!=='granted')return;
+      const reg2=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:VAPID_PUBLIC_KEY});
+      await savePushSub(reg2);
+    }).catch(()=>{});
+  }catch(e){}
+}
+async function savePushSub(sub){
+  try{const j=sub.toJSON();await client.from('push_subscriptions').upsert({user_id:currentUser.id,endpoint:j.endpoint,auth:j.keys.auth,p256dh:j.keys.p256dh},{onConflict:'user_id,endpoint'});}catch(e){}
+}
 const splash=document.getElementById('v12Splash');
 const bootScreen=document.getElementById('bootScreen');
 const bootStatus=document.getElementById('bootStatus');
