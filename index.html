@@ -925,14 +925,14 @@ function updateUserUI(){
 
 function bindEvents(){
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>switchPage(b.dataset.nav));
-  document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{currentCategory=b.dataset.cat;document.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('active',x.dataset.cat===currentCategory));switchPage('home');refreshPosts(true);});
-  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{myTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));if(myTab==='hidden')loadMyData().then(()=>renderMyPage()).catch(()=>renderMyPage());else renderMyPage();});
+  document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{currentCategory=b.dataset.cat;document.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('active',x.dataset.cat===currentCategory));switchPage('home');refreshPosts(true,true);});
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{myTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderMyPage();if(myTab==='hidden')refreshHidden().catch(()=>{});});
   $('userChip').onclick=openUser;$('mobileUserBtn').onclick=openUser;$('editProfileBtn').onclick=openUser;$('saveUserBtn').onclick=saveProfile;$('cancelUser').onclick=closeUser;
   document.querySelectorAll('.avatar-choice').forEach(b=>b.onclick=()=>{document.querySelectorAll('.avatar-choice').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')});
   const aboutBtn = $('aboutBtn'); const aboutModal = $('aboutModal'); const closeAbout = $('closeAbout'); if(aboutBtn && aboutModal) aboutBtn.onclick=()=>aboutModal.classList.remove('hide'); if(closeAbout && aboutModal) closeAbout.onclick=()=>aboutModal.classList.add('hide');
   $('adminEntryBtn').onclick=openAdmin;$('cancelAdmin').onclick=closeAdmin;
   $('publishBtn').onclick=publishPost;$('postImageInput').onchange=handlePostImages;$('textVal').oninput=()=>$('charCount').textContent=$('textVal').value.length+' / 2000';
-  let searchDebounce=null;$('searchInput').oninput=e=>{clearTimeout(searchDebounce);const v=e.target.value;searchDebounce=setTimeout(()=>{searchText=v.trim().toLowerCase();refreshPosts(true)},200)};
+  let searchDebounce=null;$('searchInput').oninput=e=>{clearTimeout(searchDebounce);const v=e.target.value;searchDebounce=setTimeout(()=>{searchText=v.trim().toLowerCase();refreshPosts(true,true)},200)};
   $('sortBtn').onclick=()=>{sortMode=sortMode==='new'?'hot':'new';$('sortBtn').textContent=sortMode==='new'?'最新优先 ↕':'最热优先 ↕';renderPosts()};
   $('lightbox').onclick=()=>$('lightbox').classList.add('hide');
   // 第二阶段：论坛管理
@@ -1045,11 +1045,11 @@ async function togglePinPost(id){
 }
 async function hidePost(id){
   const d=await setPostFlag(id,{is_hidden:true});
-  if(d){if(!hiddenPosts.some(p=>p.id===id))hiddenPosts.unshift(d);invalidateStats();renderPosts();loadMyData().then(()=>renderMyPage()).catch(()=>{});refreshAdmin();toast('已隐藏，仅管理员可在隐藏列表查看')}
+  if(d){if(!hiddenPosts.some(p=>p.id===id))hiddenPosts.unshift(d);invalidateStats();renderPosts();refreshHidden();refreshAdmin();toast('已隐藏，仅管理员可在隐藏列表查看')}
 }
 async function restorePost(id){
   const d=await setPostFlag(id,{is_hidden:false});
-  if(d){hiddenPosts=hiddenPosts.filter(p=>p.id!==id);invalidateStats();renderPosts();loadMyData().then(()=>renderMyPage()).catch(()=>{});refreshAdmin();toast('已恢复到信息流')}
+  if(d){hiddenPosts=hiddenPosts.filter(p=>p.id!==id);invalidateStats();renderPosts();refreshHidden();refreshAdmin();toast('已恢复到信息流')}
 }
 async function togglePinComment(cid){
   const c=comments.find(x=>x.id===cid);if(!c)return;
@@ -1069,18 +1069,18 @@ function openAdminBackend(){
 function closeAdminPanel(){$('adminPanel').classList.add('hide')}
 function refreshAdmin(){if(!$('adminPanel').classList.contains('hide'))renderAdminBody()}
 async function loadAdminData(){
-  try{
-    const {data:rp,error:e1}=await client.from('post_reports').select('*').order('created_at',{ascending:false}).limit(300);
-    if(e1)throw e1;reports=rp||[];
-  }catch(e){console.warn('读取举报失败（请先运行 management-setup.sql）',e);reports=[]}
-  try{
-    const {data:ap,error:e2}=await client.from('posts').select('*').order('created_at',{ascending:false}).limit(300);
-    if(e2)throw e2;adminPosts=ap||[];
-  }catch(e){console.warn('读取后台帖子失败',e);adminPosts=[]}
-  try{
-    const {data:hp,error:e3}=await client.from('posts').select('*').eq('is_hidden',true).order('created_at',{ascending:false}).limit(300);
-    if(e3)throw e3;hiddenPosts=hp||[];
-  }catch(e){hiddenPosts=adminPosts.filter(p=>p.is_hidden)}
+  // 三路查询并行，缩短后台打开时间
+  const [rp,ap,hp]=await Promise.allSettled([
+    client.from('post_reports').select('*').order('created_at',{ascending:false}).limit(300),
+    client.from('posts').select('*').order('created_at',{ascending:false}).limit(300),
+    client.from('posts').select('*').eq('is_hidden',true).order('created_at',{ascending:false}).limit(300)
+  ]);
+  if(rp.status==='fulfilled'&&!rp.value.error)reports=rp.value.data||[];
+  else{console.warn('读取举报失败（请先运行 management-setup.sql）',rp.reason||rp.value?.error);reports=[]}
+  if(ap.status==='fulfilled'&&!ap.value.error)adminPosts=ap.value.data||[];
+  else{console.warn('读取后台帖子失败',ap.reason||ap.value?.error);adminPosts=[]}
+  if(hp.status==='fulfilled'&&!hp.value.error)hiddenPosts=hp.value.data||[];
+  else hiddenPosts=adminPosts.filter(p=>p.is_hidden);
 }
 function reportTargetPreview(r){
   if(r.target_type==='comment'){
@@ -1325,14 +1325,21 @@ function postHotScore(p){
   return engagement/Math.pow(ageHours+2,1.5);
 }
 function filteredPosts(){
-  const arr=posts.filter(p=>!p.is_hidden);
+  // 本地近似过滤（分类/搜索）：让切分类、搜索时能“先渲染缓存、后台刷新”，不等网络
+  let arr=posts.filter(p=>!p.is_hidden);
+  if(currentCategory!=='all')arr=arr.filter(p=>p.category===currentCategory);
+  if(searchText)arr=arr.filter(p=>(p.content||'').toLowerCase().includes(searchText));
   arr.sort((a,b)=>{
     const pd=(b.is_pinned?1:0)-(a.is_pinned?1:0);if(pd)return pd;
     return sortMode==='new'?new Date(b.created_at).getTime()-new Date(a.created_at).getTime():postHotScore(b)-postHotScore(a)||new Date(b.created_at).getTime()-new Date(a.created_at).getTime();
   });
   return arr;
 }
-async function refreshPosts(reset=true){try{await retryable(()=>loadPosts(reset),'加载帖子',1,30000);}catch(e){console.error('加载帖子失败',e);toast('帖子加载失败：'+(e.message||e));return;}renderPosts();}
+async function refreshPosts(reset=true,optimistic=false){
+  // optimistic：点击瞬间先用本地缓存渲染近似结果（即时反馈），网络回来后再刷新为精确结果
+  if(optimistic&&reset)renderPosts();
+  try{await retryable(()=>loadPosts(reset),'加载帖子',1,30000);}catch(e){console.error('加载帖子失败',e);toast('帖子加载失败：'+(e.message||e));return;}renderPosts();
+}
 async function loadMorePosts(){const list=$('postList');const btn=list&&list.querySelector('[data-act="loadmore"]');if(btn)btn.textContent='加载中…';try{await retryable(()=>loadPosts(false),'加载更多',0,15000);}catch(e){console.error(e);toast('加载更多失败：'+(e.message||e));}renderPosts(false);}
 function renderPosts(animate=true){
   invalidateStats();
@@ -1462,7 +1469,9 @@ async function deleteComment(id){
 async function sendComment(id){
   const input=$('ci-'+id),content=input.value.trim(),imgs=pendingCommentImages[id]||[],anonymous=!!document.querySelector(`.comment-anon[data-id="${id}"]`)?.checked;
   if(!content){toast('请输入评论文字');return}
+  const btn=document.querySelector(`[data-act="sendcomment"][data-id="${id}"]`);if(btn){btn.disabled=true;btn.textContent='发送中…'}
   const {data,error}=await client.from('comments').insert({post_id:id,author_id:currentUser.id,content:content||'',images:imgs,anonymous}).select('*').single();
+  if(btn){btn.disabled=false;btn.textContent='发送'}
   if(error){toast('评论失败：'+error.message);return}
   input.value='';pendingCommentImages[id]=[];
   if(data)comments=[...comments,data];
@@ -1472,22 +1481,35 @@ function openLightbox(src){$('lightboxImg').src=src;$('lightbox').classList.remo
 // 单独拉取“我的”数据：分页后全局 posts 不完整，我的帖子/评论/点赞/收藏必须按需查询，不受信息流分页影响
 async function loadMyData(){
   try{
-    const [{data:mp},{data:mc}]=await Promise.all([
+    // 并行拉取：我的帖子 / 我的评论 / 隐藏帖，减少串行等待
+    const admin=isAdmin();
+    const [mpR,mcR,hpR]=await Promise.all([
       client.from('posts').select('*').eq('author_id',currentUser.id),
-      client.from('comments').select('*').eq('author_id',currentUser.id)
+      client.from('comments').select('*').eq('author_id',currentUser.id),
+      (async()=>{
+        let hq=client.from('posts').select('*').eq('is_hidden',true).order('created_at',{ascending:false});
+        if(!admin)hq=hq.eq('author_id',currentUser.id);
+        const {data,error}=await hq;
+        return error?{data:null,err:error}:null;
+      })()
     ]);
-    myPosts=mp||[];myComments=mc||[];
+    myPosts=mpR.data||[];myComments=mcR.data||[];
+    if(hpR){if(hpR.err){console.warn('读取隐藏帖子失败（请先在 Supabase 运行 management-setup.sql）',hpR.err);hiddenPosts=[]}else hiddenPosts=hpR.data||[]}
+    // 父帖子（评论/点赞/收藏对应的帖子）：依赖上一步结果，单独并行
     const ids=[...new Set([...myComments.map(c=>c.post_id),...likes.filter(x=>x.user_id===currentUser.id).map(x=>x.post_id),...favorites.filter(x=>x.user_id===currentUser.id).map(x=>x.post_id)])];
     if(ids.length){const {data:pp}=await client.from('posts').select('*').in('id',ids);myParentPosts=Object.fromEntries((pp||[]).map(p=>[p.id,p]));}
     else myParentPosts={};
-    // 隐藏帖子：管理员看全站（无论作者），普通用户只看自己的（普通用户无法隐藏，通常为空）
-    try{
-      let hq=client.from('posts').select('*').eq('is_hidden',true).order('created_at',{ascending:false});
-      if(!isAdmin())hq=hq.eq('author_id',currentUser.id);
-      const {data:hp,error:he}=await hq;
-      if(he)throw he;hiddenPosts=hp||[];
-    }catch(he){console.warn('读取隐藏帖子失败（请先在 Supabase 运行 management-setup.sql）',he);hiddenPosts=[]}
   }catch(e){console.warn('读取我的数据失败',e);}
+}
+// 轻量刷新“隐藏”列表：只查隐藏帖，不重拉全量数据；用于切到隐藏 tab 时的后台静默更新
+async function refreshHidden(){
+  try{
+    let hq=client.from('posts').select('*').eq('is_hidden',true).order('created_at',{ascending:false});
+    if(!isAdmin())hq=hq.eq('author_id',currentUser.id);
+    const {data:hp,error:he}=await hq;
+    if(he)throw he;hiddenPosts=hp||[];
+    if(myTab==='hidden')renderMyPage();
+  }catch(he){console.warn('读取隐藏帖子失败（请先在 Supabase 运行 management-setup.sql）',he);}
 }
 
 let activePage='home';
@@ -1502,7 +1524,7 @@ function switchPage(page){
     next.classList.remove('hide','page-exit','page-enter');
     activePage=page;
     document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===page));
-    if(page==='my')loadMyData().then(()=>renderMyPage()).catch(()=>{});
+    if(page==='my'){renderMyPage();loadMyData().then(()=>{if(activePage==='my')renderMyPage()}).catch(()=>{});}
   };
   if(document.startViewTransition){
     try{document.startViewTransition(updatePage);}
