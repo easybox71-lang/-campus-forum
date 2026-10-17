@@ -926,7 +926,7 @@ function updateUserUI(){
 function bindEvents(){
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>switchPage(b.dataset.nav));
   document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{currentCategory=b.dataset.cat;document.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('active',x.dataset.cat===currentCategory));switchPage('home');refreshPosts(true,true);});
-  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{myTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderMyPage();if(myTab==='hidden')refreshHidden().catch(()=>{});});
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{myTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderMyPage(true);if(myTab==='hidden')refreshHidden().catch(()=>{});});
   $('userChip').onclick=openUser;$('mobileUserBtn').onclick=openUser;$('editProfileBtn').onclick=openUser;$('saveUserBtn').onclick=saveProfile;$('cancelUser').onclick=closeUser;
   document.querySelectorAll('.avatar-choice').forEach(b=>b.onclick=()=>{document.querySelectorAll('.avatar-choice').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')});
   const aboutBtn = $('aboutBtn'); const aboutModal = $('aboutModal'); const closeAbout = $('closeAbout'); if(aboutBtn && aboutModal) aboutBtn.onclick=()=>aboutModal.classList.remove('hide'); if(closeAbout && aboutModal) closeAbout.onclick=()=>aboutModal.classList.add('hide');
@@ -1526,21 +1526,18 @@ function switchPage(page){
     document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===page));
     if(page==='my'){renderMyPage();loadMyData().then(()=>{if(activePage==='my')renderMyPage()}).catch(()=>{});}
   };
-  if(document.startViewTransition){
-    try{document.startViewTransition(updatePage);}
-    catch(e){current.classList.remove('page-enter');current.classList.add('page-exit');window.setTimeout(()=>{updatePage();next.classList.add('page-enter');},180);}
-  }else{
-    current.classList.remove('page-enter');current.classList.add('page-exit');
-    window.setTimeout(()=>{updatePage();next.classList.add('page-enter');},190);
-  }
+  // 手动页面过渡：不使用 startViewTransition，避免视图过渡在恢复 DOM 时重播列表入场动画（导致“重复过渡”）
+  current.classList.remove('page-enter');current.classList.add('page-exit');
+  window.setTimeout(()=>{updatePage();next.classList.add('page-enter');},190);
 }
-function renderMyPage(){
+function renderMyPage(animate=false){
   if(!currentUser)return;updateUserUI();const box=$('myContentList');
   if(myTab==='posts'){const a=myPosts;box.innerHTML=a.length?a.map(p=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><button class="action delete" data-myact="delete" data-id="${p.id}">🗑️ 删除</button></div><div class="post-content" style="margin-top:10px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div>${timeHtml(p.created_at)}</div>`).join(''):'<div class="empty"><span class="emoji">📝</span>你还没有发布过帖子哦</div>';
   }else if(myTab==='comments'){const a=myComments;box.innerHTML=a.length?a.map(c=>`<div class="card" style="margin-bottom:12px"><div style="font-size:12px;color:var(--muted);margin-bottom:7px">回复帖子：${esc(myParentPosts[c.post_id]?.content||'[图片帖]')}</div><div style="background:#f8fafc;border-radius:9px;padding:10px;font-size:13px;color:var(--sub)">${esc(c.content)||'[图片评论]'}</div><div style="display:flex;align-items:center;margin-top:7px">${timeHtml(c.created_at)}<button class="action delete" style="margin-left:auto" data-myact="delcomment" data-id="${c.id}">🗑️ 删除</button></div></div>`).join(''):'<div class="empty"><span class="emoji">💬</span>你还没有发表过评论哦</div>';
 }else if(myTab==='hidden'){const a=hiddenPosts;box.innerHTML=a.length?a.map(p=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${isAdmin()?`<button class="mini" data-myact="restore" data-id="${p.id}">♻️ 恢复</button>`:''}</div><div class="post-content" style="margin-top:10px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><div style="display:flex;align-items:center;margin-top:6px"><span style="font-size:12px;color:var(--muted)">作者：${esc(displayName(p.author_id,p.anonymous))}</span>${timeHtml(p.created_at)}</div></div>`).join(''):'<div class="empty"><span class="emoji">🚫</span>没有隐藏的帖子</div>'
   }else{const ids=(myTab==='likes'?likes:favorites).filter(x=>x.user_id===currentUser.id).map(x=>x.post_id);const arr=ids.map(id=>myParentPosts[id]).filter(Boolean);box.innerHTML=arr.length?arr.map(p=>`<div class="card" style="margin-bottom:12px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><div class="post-content" style="margin-top:9px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><button class="action ${myTab==='likes'?'like-on':'fav-on'}" data-myact="${myTab==='likes'?'unlike':'unfav'}" data-id="${p.id}">${myTab==='likes'?'❤️ 取消点赞':'⭐ 取消收藏'}</button></div>`).join(''):`<div class="empty"><span class="emoji">${myTab==='likes'?'❤️':'⭐'}</span>${myTab==='likes'?'你还没有点赞过帖子哦':'你还没有收藏过帖子哦'}</div>`}
-  box.classList.remove('tab-panel-enter');void box.offsetWidth;box.classList.add('tab-panel-enter');
+  if(animate){box.classList.remove('tab-panel-enter');void box.offsetWidth;box.classList.add('tab-panel-enter');box.addEventListener('animationend',()=>box.classList.remove('tab-panel-enter'),{once:true});}
+  else box.classList.remove('tab-panel-enter');
   box.querySelectorAll('[data-myact="delete"]').forEach(b=>b.onclick=()=>deletePost(b.dataset.id));box.querySelectorAll('[data-myact="delcomment"]').forEach(b=>b.onclick=()=>deleteComment(b.dataset.id));box.querySelectorAll('[data-myact="unlike"]').forEach(b=>b.onclick=()=>toggleLike(b.dataset.id));box.querySelectorAll('[data-myact="unfav"]').forEach(b=>b.onclick=()=>toggleFav(b.dataset.id));box.querySelectorAll('[data-myact="restore"]').forEach(b=>b.onclick=()=>restorePost(b.dataset.id));
 }
 
