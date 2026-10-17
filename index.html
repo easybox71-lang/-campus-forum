@@ -106,7 +106,7 @@ textarea::placeholder{color:#a8b2c1}
 .mini{border:1px solid var(--border);background:#fff;color:var(--sub);border-radius:9px;padding:8px 12px;font-size:13px;font-weight:600}.mini:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}.mini.admin{background:#d97706;color:#fff;border-color:#d97706}
 .tabs{display:flex;gap:5px;background:#f1f5f9;padding:4px;border-radius:11px;margin-bottom:18px;overflow:auto}.tab{white-space:nowrap;border:0;background:none;color:var(--sub);padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600}.tab.active{background:#fff;color:var(--primary);box-shadow:0 1px 4px rgba(15,23,42,.08)}
 .modal-mask{position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:18px}
-.modal{width:100%;max-width:410px;background:#fff;border-radius:20px;padding:24px;box-shadow:0 24px 60px rgba(15,23,42,.22)}
+.modal{width:100%;max-width:410px;max-height:calc(100vh - 36px);max-height:calc(100dvh - 36px);overflow-y:auto;overscroll-behavior:contain;background:#fff;border-radius:20px;padding:24px;box-shadow:0 24px 60px rgba(15,23,42,.22)}
 .modal h3{font-size:18px;margin-bottom:5px}.tip{font-size:12px;color:var(--muted);margin-bottom:14px}.modal input[type=text],.modal input[type=password]{width:100%;border:1px solid var(--border);background:#f8fafc;border-radius:10px;padding:11px 13px;outline:0;margin-bottom:8px}.modal input:focus{background:#fff;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
 .status{min-height:18px;color:var(--muted);font-size:12px;margin-bottom:12px}.status.ok{color:var(--ok)}.status.err{color:var(--danger)}
 .avatars{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 18px}.avatar-choice{width:42px;height:42px;border:2px solid transparent;border-radius:50%;background:#f1f5f9;display:grid;place-items:center;font-size:21px}.avatar-choice.selected{border-color:var(--primary);background:var(--primary-soft)}
@@ -363,6 +363,7 @@ header{background:rgba(248,251,255,.62);backdrop-filter:blur(30px) saturate(185%
 <style id="v16-premium-ui">
 :root{--ease-premium:cubic-bezier(.2,.75,.25,1);--ease-spring:cubic-bezier(.2,1,.3,1);--surface-glass:rgba(255,255,255,.78);--line-soft:rgba(148,163,184,.18);--shadow-soft:0 2px 6px rgba(15,23,42,.025),0 12px 32px rgba(30,64,175,.045)}
 html{scroll-behavior:smooth;scrollbar-gutter:stable}
+html.overlay-open{scrollbar-gutter:auto}
 body{background:radial-gradient(ellipse at 8% 0%,rgba(219,234,254,.44),transparent 36%),linear-gradient(180deg,#f8faff 0%,#f3f6fb 48%,#f7f9fc 100%);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 header{background:rgba(250,252,255,.82);border-bottom-color:rgba(255,255,255,.86);box-shadow:0 4px 22px rgba(15,23,42,.035);backdrop-filter:blur(22px) saturate(155%);-webkit-backdrop-filter:blur(22px) saturate(155%)}
 .nav{min-height:66px}.logo{letter-spacing:-.025em}.logo-mark{border-radius:12px;box-shadow:0 5px 13px rgba(37,99,235,.19)}
@@ -409,14 +410,12 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
 .post-open-hint{display:inline-block;margin-top:9px;font-size:13px;font-weight:700;color:var(--primary)}
 .post-card .actions .action{pointer-events:auto}
 
-/* ===== 帖子详情页（覆盖层） ===== */
-.lightbox{z-index:200!important}
-.detail-overlay{position:fixed;inset:0;z-index:90;background:rgba(15,23,42,.30);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;justify-content:center;align-items:flex-start;transition:opacity .22s ease}
+/* ===== 帖子详情页（全屏） ===== */
+.detail-overlay{position:fixed;inset:0;z-index:980;background:var(--bg);display:flex;justify-content:center;align-items:stretch;transition:opacity .22s ease}
 .detail-overlay.hide{display:none}
-.detail-sheet{position:relative;width:100%;max-width:620px;display:flex;flex-direction:column;background:var(--bg);box-shadow:0 -10px 44px rgba(15,23,42,.20);animation:detail-slide .26s var(--ease-out) both}
+.detail-sheet{position:relative;width:100%;max-width:620px;height:100%;display:flex;flex-direction:column;background:var(--bg);animation:detail-slide .26s var(--ease-out) both}
 @keyframes detail-slide{from{transform:translateY(26px);opacity:.35}to{transform:translateY(0);opacity:1}}
-@media(min-width:769px){.detail-sheet{margin-top:34px;border-radius:20px 20px 0 0;max-height:calc(100% - 34px)}}
-.detail-bar{position:sticky;top:0;display:flex;align-items:center;gap:12px;padding:12px 15px;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid #eef2f7;z-index:2}
+.detail-bar{position:sticky;top:0;display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 15px 12px;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid #eef2f7;z-index:2}
 .detail-back{border:0;background:none;color:var(--primary);font-size:15px;font-weight:700;cursor:pointer;padding:4px 6px;border-radius:8px}
 .detail-back:hover{background:rgba(37,99,235,.08)}
 .detail-bar-title{font-size:15px;font-weight:800}
@@ -437,11 +436,12 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
 .bell-btn:hover{color:var(--primary);border-color:var(--primary)}
 .bell-badge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--danger);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center}
 .nav-msg{display:flex;gap:8px;align-items:center}
-.user-home,.notif-panel,.dm-panel{position:fixed;inset:0;z-index:95;background:rgba(15,23,42,.3);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;justify-content:center;align-items:flex-start}
+.user-home{position:fixed;inset:0;z-index:950;background:var(--bg);display:flex;justify-content:center;align-items:stretch}
+.notif-panel{position:fixed;inset:0;z-index:960;background:var(--bg);display:flex;justify-content:center;align-items:stretch}
+.dm-panel{position:fixed;inset:0;z-index:970;background:var(--bg);display:flex;justify-content:center;align-items:stretch}
 .user-home.hide,.notif-panel.hide,.dm-panel.hide{display:none}
-.uh-sheet,.notif-sheet,.dm-sheet{position:relative;width:100%;max-width:600px;height:100%;display:flex;flex-direction:column;background:var(--bg);box-shadow:0 -10px 44px rgba(15,23,42,.2)}
-@media(min-width:769px){.uh-sheet,.notif-sheet,.dm-sheet{margin-top:34px;border-radius:20px 20px 0 0;max-height:calc(100% - 34px)}}
-.uh-bar,.notif-bar,.dm-bar{position:sticky;top:0;display:flex;align-items:center;gap:12px;padding:12px 15px;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid #eef2f7;z-index:2}
+.uh-sheet,.notif-sheet,.dm-sheet{position:relative;width:100%;max-width:600px;height:100%;display:flex;flex-direction:column;background:var(--bg)}
+.uh-bar,.notif-bar,.dm-bar{position:sticky;top:0;display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 15px 12px;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid #eef2f7;z-index:2}
 .uh-bar-title,.notif-bar-title,.dm-bar-title{font-size:15px;font-weight:800}
 .uh-back,.notif-back,.dm-back{border:0;background:none;color:var(--primary);font-size:15px;font-weight:700;cursor:pointer;padding:4px 6px;border-radius:8px}
 .uh-scroll,.notif-scroll,.dm-scroll{flex:1;overflow-y:auto;padding:16px}
@@ -857,7 +857,10 @@ let currentUser=null,currentProfile=null,allProfiles=[];
 let posts=[],comments=[],likes=[],favorites=[];
 let currentCategory='all',myTab='posts',sortMode='new',searchText='';
 const PAGE_SIZE=30;let postsLoaded=0,postsHasMore=true;let myPosts=[],myComments=[],myParentPosts={};
-let followingSet=new Set(),followerSet=new Set(),notifications=[],myUnread=0,conversations=[],activeConvId=null,followStats={following:0,followers:0},pendingDMImages=[],dmReportTarget={convId:null,msgId:null};
+let followingSet=new Set(),followerSet=new Set(),notifications=[],myUnread=0,conversations=[],activeConvId=null,followStats={following:0,followers:0},pendingDMImages=[],dmReportTarget={convId:null,msgId:null},userHomeUid=null,scrollLocks=0;
+// 全屏页面式浮层：打开时锁背景滚动，关闭时解锁（多层嵌套用计数器，避免早关）
+function lockScroll(){scrollLocks++;document.body.style.overflow='hidden';document.documentElement.classList.add('overlay-open');}
+function unlockScroll(){scrollLocks=Math.max(0,scrollLocks-1);if(!scrollLocks){document.body.style.overflow='';document.documentElement.classList.remove('overlay-open');}}
 let myHistory=[],viewedSet=new Set(),detailOpen=false,detailPostId=null;
 let pendingPostImages=[],pendingCommentImages={};
 // 第二阶段：论坛管理（举报 / 置顶 / 隐藏 / 管理员后台）
@@ -1123,7 +1126,7 @@ function bindEvents(){
   $('dmBtn').onclick=openDMPanel;$('mobileDmBtn').onclick=openDMPanel;
   $('notifClose').onclick=closeNotifPanel;
   $('userHomeClose').onclick=closeUserProfile;
-  $('uhPosts').addEventListener('click',e=>{const au=e.target.closest('[data-author]');if(au){openUserProfile(au.dataset.author);return}const b=e.target.closest('[data-act]');if(b){const act=b.dataset.act,uid=b.dataset.uid,id=b.dataset.id;if(act==='follow')toggleFollow(uid);else if(act==='dm')startDM(uid);else if(act==='report'){if(id)openReport(b.dataset.ctype||'post',id);else openReport('user',uid);}else if(act==='like')toggleLike(id);else if(act==='fav')toggleFav(id);else if(act==='comment')openPostDetail(id);else if(act==='edit')openEditPost(id);else if(act==='hide')hidePost(id);else if(act==='pin')togglePinPost(id);else if(act==='unpin')togglePinPost(id);else if(act==='restore')restorePost(id);else if(act==='delete')deletePost(id);return;}});
+  $('uhPosts').addEventListener('click',e=>{const lb=e.target.closest('[data-lightbox]');if(lb){openLightbox(lb.dataset.lightbox);return}const au=e.target.closest('[data-author]');if(au){openUserProfile(au.dataset.author);return}const b=e.target.closest('[data-act]');if(b){const act=b.dataset.act,uid=b.dataset.uid,id=b.dataset.id;if(act==='follow')toggleFollow(uid);else if(act==='dm')startDM(uid);else if(act==='report'){if(id)openReport(b.dataset.ctype||'post',id);else openReport('user',uid);}else if(act==='like')toggleLike(id);else if(act==='fav')toggleFav(id);else if(act==='comment')openPostDetail(id);else if(act==='edit')openEditPost(id);else if(act==='hide')hidePost(id);else if(act==='pin')togglePinPost(id);else if(act==='unpin')togglePinPost(id);else if(act==='restore')restorePost(id);else if(act==='delete')deletePost(id);return;}const card=e.target.closest('.post-card');if(card&&card.dataset.id)openPostDetail(card.dataset.id);});
   $('dmPanelClose').onclick=closeDMPanel;
   $('dmBack').onclick=()=>{$('dmChat').classList.add('hide');$('dmList').classList.remove('hide')};
   $('dmReportBtn').onclick=()=>{if(activeConvId)openDMReport(activeConvId,null)};
@@ -1613,17 +1616,18 @@ function onFeedClick(e){
 // ===== 帖子详情页（覆盖层） =====
 function openPostDetail(id){
   const p=posts.find(x=>x.id===id);if(!p)return;
+  if(!$('userHome').classList.contains('hide'))closeUserProfile();
   detailOpen=true;detailPostId=id;
   renderDetail(p);
   $('postDetail').classList.remove('hide');
-  document.body.style.overflow='hidden';
+  lockScroll();
   recordView(id);
   if(comments.some(c=>c.post_id===id))renderDetailComments(id,false);
 }
 function closePostDetail(){
   detailOpen=false;detailPostId=null;
   $('postDetail').classList.add('hide');
-  document.body.style.overflow='';
+  unlockScroll();
 }
 function renderDetail(p){
   const st=postStats(p.id),liked=isLiked(p.id),fav=isFav(p.id),me=p.author_id===currentUser.id,prof=profileFor(p.author_id),name=displayName(p.author_id,p.anonymous),av=prof?.avatar||'😀',admin=!!p.is_admin,canManage=me||isAdmin();
@@ -1895,46 +1899,68 @@ async function loadFollows(){
     ]);
     followingSet=new Set((f1||[]).map(x=>x.following_id));
     followerSet=new Set((f2||[]).map(x=>x.follower_id));
+    // 若主页正开着，等关注数据到位后补一次渲染，保证按钮状态正确
+    if(userHomeUid&&!$('userHome').classList.contains('hide'))renderUserProfile(userHomeUid,profileFor(userHomeUid));
   }catch(e){console.warn('读取关注失败',e)}
 }
 async function toggleFollow(uid){
   if(uid===currentUser.id){toast('不能关注自己');return}
   const following=followingSet.has(uid);
+  // 乐观更新：先本地改并立刻刷新界面，再异步写库，失败回滚
+  if(following)followingSet.delete(uid);else followingSet.add(uid);
+  updateUserUI();renderPosts();renderMyPage();refreshFollowButton(uid);
   try{
-    if(following){const {error}=await client.from('follows').delete().eq('follower_id',currentUser.id).eq('following_id',uid);if(error)throw error;followingSet.delete(uid);}
-    else{const {error}=await client.from('follows').insert({follower_id:currentUser.id,following_id:uid});if(error)throw error;followingSet.add(uid);}
-    updateUserUI();renderPosts();renderMyPage();
-    if(!$('userHome').classList.contains('hide'))renderUserProfile(uid,profileFor(uid));
+    if(following){const {error}=await client.from('follows').delete().eq('follower_id',currentUser.id).eq('following_id',uid);if(error)throw error;}
+    else{const {error}=await client.from('follows').insert({follower_id:currentUser.id,following_id:uid});if(error)throw error;}
     toast(following?'已取消关注':'已关注');
-  }catch(e){toast('操作失败：'+e.message)}
+  }catch(e){
+    if(following)followingSet.add(uid);else followingSet.delete(uid);
+    updateUserUI();renderPosts();renderMyPage();refreshFollowButton(uid);
+    toast('操作失败：'+e.message);
+  }
+}
+// 只刷新他人主页上的关注按钮，避免整页重拉
+function refreshFollowButton(uid){
+  const btn=$('uhActions')&&$('uhActions').querySelector('[data-uhact="follow"]');
+  if(!btn)return;
+  const now=followingSet.has(uid);
+  btn.textContent=now?'✅ 已关注':'➕ 关注';
+  btn.classList.toggle('primary',!now);
 }
 function openUserProfile(uid){
-  if(!uid||uid===currentUser.id){switchPage('my');return;}
+  if(!uid||uid===currentUser.id){if(!$('postDetail').classList.contains('hide'))closePostDetail();switchPage('my');return;}
+  if(!$('postDetail').classList.contains('hide'))closePostDetail();
+  userHomeUid=uid;
   renderUserProfile(uid,profileFor(uid));
-  $('userHome').classList.remove('hide');document.body.style.overflow='hidden';
+  $('userHome').classList.remove('hide');
+  lockScroll();
 }
-function closeUserProfile(){$('userHome').classList.add('hide');document.body.style.overflow='';}
+function closeUserProfile(){$('userHome').classList.add('hide');userHomeUid=null;unlockScroll();}
 async function renderUserProfile(uid,prof){
   prof=prof||profileFor(uid)||{id:uid,nickname:'同学',avatar:'😀'};
+  // 头部信息来自本地缓存，先渲染，保证点开秒显示
   $('uhAvatar').textContent=prof.avatar||'😀';
   $('uhNick').textContent=prof.nickname||'同学';
   $('uhMeta').textContent=[prof.grade,prof.class_name].filter(Boolean).join(' · ')||'思茅一中 · 在校学生';
   $('uhBio').textContent=prof.bio||'这个人很懒，什么都没写～';
-  try{
-    const [{count:f},{count:g}]=await Promise.all([
-      client.from('follows').select('*',{count:'exact',head:true}).eq('follower_id',uid),
-      client.from('follows').select('*',{count:'exact',head:true}).eq('following_id',uid)
-    ]);
-    $('uhStats').innerHTML=`<span><b>${f||0}</b>关注</span><span><b>${g||0}</b>粉丝</span>`;
-  }catch(e){$('uhStats').innerHTML='';}
+  $('uhStats').innerHTML='<span><b>…</b>关注</span><span><b>…</b>粉丝</span>';
   const me=uid===currentUser.id;
   const following=followingSet.has(uid);
   $('uhActions').innerHTML=me?'':`<button class="mini" data-uhact="dm" data-uid="${uid}">✉️ 私信</button><button class="mini ${following?'':'primary'}" data-uhact="follow" data-uid="${uid}">${following?'✅ 已关注':'➕ 关注'}</button><button class="mini" data-uhact="report" data-uid="${uid}">🚨 举报</button>`;
   $('uhActions').querySelectorAll('[data-uhact]').forEach(b=>b.onclick=()=>{const a=b.dataset.uhact;if(a==='follow')toggleFollow(uid);else if(a==='dm')startDM(uid);else if(a==='report')openReport('user',uid);});
+  $('uhPosts').innerHTML='<div class="empty"><span class="emoji">⏳</span>加载中…</div>';
+  // 三个查询并行，一次拿到全部数据
   try{
-    const {data}=await client.from('posts').select('*').eq('author_id',uid).eq('is_hidden',false).order('created_at',{ascending:false}).limit(50);
+    const [fr,gr,pr]=await Promise.all([
+      client.from('follows').select('*',{count:'exact',head:true}).eq('follower_id',uid),
+      client.from('follows').select('*',{count:'exact',head:true}).eq('following_id',uid),
+      client.from('posts').select('*').eq('author_id',uid).eq('is_hidden',false).order('created_at',{ascending:false}).limit(50)
+    ]);
+    if(userHomeUid!==uid)return; // 已翻页到其他主页，丢弃过期结果
+    $('uhStats').innerHTML=`<span><b>${fr.count||0}</b>关注</span><span><b>${gr.count||0}</b>粉丝</span>`;
+    const data=pr.data;
     $('uhPosts').innerHTML=data&&data.length?data.map(postHtml).join(''):'<div class="empty"><span class="emoji">📭</span>TA还没有发布过公开动态</div>';
-  }catch(e){$('uhPosts').innerHTML='<div class="empty">加载失败</div>';}
+  }catch(e){$('uhPosts').innerHTML='<div class="empty">加载失败，下拉重试</div>';}
 }
 function userRowHtml(uid,followersView){
   const p=allProfiles.find(x=>x.id===uid)||{id:uid,nickname:'同学',avatar:'😀'};
@@ -1952,8 +1978,8 @@ async function loadNotifications(){
   }catch(e){console.warn('读取通知失败',e)}
 }
 function updateBell(){const b=$('bellBadge');if(!b)return;if(myUnread>0){b.textContent=myUnread>99?'99+':myUnread;b.classList.remove('hide');}else b.classList.add('hide');}
-function openNotifPanel(){loadNotifications().catch(()=>{});$('notifPanel').classList.remove('hide');}
-function closeNotifPanel(){$('notifPanel').classList.add('hide');}
+function openNotifPanel(){renderNotifications();$('notifPanel').classList.remove('hide');lockScroll();loadNotifications().catch(()=>{});}
+function closeNotifPanel(){$('notifPanel').classList.add('hide');unlockScroll();}
 function renderNotifications(){
   const box=$('notifList');
   if(!notifications.length){box.innerHTML='<div class="empty"><span class="emoji">🔔</span>暂时没有通知</div>';return;}
@@ -1977,10 +2003,22 @@ async function onNotifClick(el){
   closeNotifPanel();
 }
 // ---- 私信 ----
-async function openDMPanel(){await loadConversations();$('dmPanel').classList.remove('hide');}
-function closeDMPanel(){$('dmPanel').classList.add('hide');activeConvId=null;}
+async function openDMPanel(){
+  $('dmPanel').classList.remove('hide');
+  lockScroll();
+  renderConversations();               // 先用已缓存的会话列表秒开面板
+  loadConversations().catch(()=>{});   // 后台静默刷新
+}
+function closeDMPanel(){$('dmPanel').classList.add('hide');activeConvId=null;$('dmChat').classList.add('hide');$('dmList').classList.remove('hide');unlockScroll();}
 async function loadConversations(){
-  try{const {data,error}=await client.from('conversations').select('*').order('created_at',{ascending:false}).limit(100);if(error)throw error;conversations=data||[];}catch(e){conversations=conversations||[];console.warn('读取会话失败',e);}
+  try{
+    const {data,error}=await client.from('conversations').select('*').order('created_at',{ascending:false}).limit(100);
+    if(error)throw error;
+    // 合并而非整体替换：避免后台刷新把刚创建的新会话冲掉
+    const byId=new Map(conversations.map(c=>[c.id,c]));
+    (data||[]).forEach(c=>byId.set(c.id,c));
+    conversations=[...byId.values()];
+  }catch(e){conversations=conversations||[];console.warn('读取会话失败',e);}
   renderConversations();
 }
 function renderConversations(){
@@ -2001,7 +2039,13 @@ async function ensureConversation(otherId){
   if(error)throw error;return data;
 }
 async function startDM(otherId){
-  try{const c=await ensureConversation(otherId);if(!conversations.some(x=>x.id===c.id))conversations.unshift(c);await openDMPanel();await openDMChat(c.id);}catch(e){toast('无法开始私信：'+e.message);}
+  try{
+    openDMPanel(); // 先秒开面板，再在后台确保会话存在
+    const c=await ensureConversation(otherId);
+    if(!conversations.some(x=>x.id===c.id))conversations.unshift(c);
+    renderConversations();
+    await openDMChat(c.id);
+  }catch(e){toast('无法开始私信：'+e.message);}
 }
 async function openDMChat(convId){
   activeConvId=convId;
@@ -2010,6 +2054,7 @@ async function openDMChat(convId){
   if(!c)return;
   $('dmChatName').textContent=displayName(otherOf(c),false);
   $('dmChat').classList.remove('hide');$('dmList').classList.add('hide');
+  $('dmMessages').innerHTML='<div class="dm-empty">加载中…</div>';
   await loadMessages(convId);
   client.from('messages').update({read_at:new Date().toISOString()}).eq('conversation_id',convId).eq('sender_id',otherOf(c)).is('read_at',null).then(()=>{}).catch(()=>{});
 }
