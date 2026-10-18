@@ -853,7 +853,7 @@ async function prepareClient(){
 }
 
 let currentUser=null,currentProfile=null,allProfiles=[];
-let posts=[],comments=[],likes=[],favorites=[];
+let posts=[],comments=[],likes=[],favorites=[],profilePosts=[];
 let currentCategory='all',myTab='posts',sortMode='new',searchText='';
 const PAGE_SIZE=30;let postsLoaded=0,postsHasMore=true;let myPosts=[],myComments=[],myParentPosts={};
 let followingSet=new Set(),followerSet=new Set(),notifications=[],myUnread=0,conversations=[],activeConvId=null,followStats={following:0,followers:0},pendingDMImages=[],dmReportTarget={convId:null,msgId:null},userHomeUid=null,scrollLocks=0;
@@ -998,15 +998,33 @@ function setBootStep(name,state){
   if(state==='active')bootActiveStep=name;
 }
 function bootSay(msg){const el=$('bootStatus');if(el)el.textContent=msg;}
+// 统一按 id 查帖子：首页帖子 + 他人主页加载的帖子都能查到，避免点别人较早的帖子打不开详情
+function getPost(id){return posts.find(x=>x.id===id)||profilePosts.find(x=>x.id===id)||null;}
 async function init(){
   setBootStep('sdk','active');bootSay('正在连接社区服务器…');
   await prepareClient();
   setBootStep('sdk','done');
-  setBootStep('auth','active');bootSay('正在验证登录身份…');
+  // 快照即时渲染：先用本地缓存把首页画出来（无需登录即可展示），后台再同步
+  const hadCache=readSnapshot();
+  if(!eventsBound){bindEvents();eventsBound=true;}
+  if(hadCache){
+    renderPosts();updateBell();
+    enterForumWithoutWaiting(); // 有缓存：直接进论坛，不阻塞用户
+  }
+  setBootStep('auth','active');bootSay(hadCache?'正在同步最新内容…':'正在验证登录身份…');
   let session=await retryable(getOrCreateSession,'匿名登录 / Session',1,30000);
   currentUser=session.user;
   setBootStep('auth','done');
   setBootStep('profile','active');bootSay('正在读取个人资料…');
+  // 资料与首页/社交数据并行拉取（互不依赖），缩短进入时间
+  const refreshTasks=[
+    ()=>retryable(()=>loadPosts(true),'读取帖子',hadCache?0:1,30000),
+    ()=>retryable(loadProfiles,'读取 profiles',0,12000),
+    ()=>retryable(loadComments,'读取 comments',0,12000),
+    ()=>retryable(loadLikes,'读取 likes',0,12000),
+    ()=>retryable(loadFavorites,'读取 favorites',0,12000)
+  ];
+  const refreshP=Promise.allSettled(refreshTasks.map(t=>t()));
   try{
     await retryable(createOrLoadProfile,'读取个人资料',1,20000);
   }catch(profileError){
@@ -1022,27 +1040,13 @@ async function init(){
       await retryable(createOrLoadProfile,'重新读取个人资料',1,20000);
     }else{
       console.warn('个人资料暂时无法读取，先使用默认昵称进入',profileError);
-      currentProfile={id:currentUser.id,nickname:'同学',avatar:'😀',is_admin:false};
+      currentProfile={id:currentUser?.id,nickname:'同学',avatar:'😀',is_admin:false};
     }
   }
   setBootStep('profile','done');
-  setBootStep('posts','active');bootSay('正在加载帖子动态…');
-  // 缓存秒开：先用上次会话的帖子列表渲染，网络加载完成后自动覆盖
-  if(readPostsCache())renderPosts();
-  await retryable(()=>loadPosts(true),'读取帖子',1,30000);
-  setBootStep('posts','done');
-  if(!eventsBound){bindEvents();eventsBound=true;}
   updateUserUI();renderPosts();renderMyPage();
-  if(!timeTimer)timeTimer=setInterval(relativeRefresh,30000);
-  // v1.6.5：评论/点赞/收藏/全站资料也在进入前加载完成（失败不阻塞进入）。
-  setBootStep('social','active');bootSay('正在加载评论与点赞…');
-  const socialTasks=[
-    ()=>retryable(loadProfiles,'读取 profiles',0,12000),
-    ()=>retryable(loadComments,'读取 comments',0,12000),
-    ()=>retryable(loadLikes,'读取 likes',0,12000),
-    ()=>retryable(loadFavorites,'读取 favorites',0,12000)
-  ];
-  const results=await Promise.allSettled(socialTasks.map(t=>t()));
+  setBootStep('posts','active');bootSay(hadCache?'正在更新动态…':'正在加载帖子动态…');
+  const results=await refreshP;
   const failed=results.filter(r=>r.status==='rejected');
   if(failed.length){
     setBootStep('social','fail');
@@ -1053,17 +1057,21 @@ async function init(){
     bootSay('加载完成，即将进入…');
   }
   updateUserUI();renderPosts();renderMyPage();
-  loadMyData().then(()=>renderMyPage()).catch(()=>{});
-  loadFollows().catch(()=>{});loadNotifications().catch(()=>{});subscribeRealtime();
+  writeSnapshot();
+  if(!timeTimer)timeTimer=setInterval(relativeRefresh,30000);
+  loadMyData().then(()=>{renderMyPage();writeSnapshot();}).catch(()=>{});
+  loadFollows().catch(()=>{});
+  loadNotifications().then(()=>{updateBell();writeSnapshot();}).catch(()=>{});
+  subscribeRealtime();
 }
 
 async function createOrLoadProfile(){
-  const {data,error}=await client.from('profiles').select('*').eq('id',currentUser.id).maybeSingle();
+  const {data,error}=await client.from('profiles').select('*').eq('id',currentUser?.id).maybeSingle();
   if(error){console.error(error);throw error;}
   currentProfile=data;
   if(!currentProfile) throw new Error('profile 不存在：当前匿名用户没有对应的 profiles 记录');
 }
-async function loadProfiles(){const {data,error}=await client.from('profiles').select('id,nickname,avatar,is_admin,bio,grade,class_name,real_name,real_name_public,show_follows');if(error){error.stage='读取 profiles';throw error;}allProfiles=data||[];currentProfile=allProfiles.find(p=>p.id===currentUser.id)||currentProfile;}
+async function loadProfiles(){const {data,error}=await client.from('profiles').select('id,nickname,avatar,is_admin,bio,grade,class_name,real_name,real_name_public,show_follows');if(error){error.stage='读取 profiles';throw error;}allProfiles=data||[];currentProfile=allProfiles.find(p=>p.id===currentUser?.id)||currentProfile;}
 async function loadPosts(reset=false){
   if(reset){postsLoaded=0;postsHasMore=true;}
   const searching=!!searchText;
@@ -1096,6 +1104,55 @@ function readPostsCache(){
 }
 function writePostsCache(){
   try{localStorage.setItem('sm_posts_cache_v1',JSON.stringify(posts.slice(0,60)))}catch(e){}
+}
+// —— 整站快照缓存：把首页/资料/点赞/收藏/评论/关注/通知一并缓存，二次进入 0 网络秒开 ——
+const SNAP_KEY='sm_snapshot_v2', SNAP_TTL=1000*60*30; // 30 分钟内有效
+function writeSnapshot(){
+  try{
+    localStorage.setItem(SNAP_KEY, JSON.stringify({
+      ts:Date.now(),
+      posts:posts.slice(0,60),
+      profiles:allProfiles.slice(0,400),
+      comments:comments.slice(0,400),
+      likes:likes.slice(0,1500),
+      favorites:favorites.slice(0,1500),
+      following:[...followingSet], followers:[...followerSet],
+      notifications:notifications.slice(0,100),
+      hidden:hiddenPosts.map(p=>p.id)
+    }));
+  }catch(e){}
+}
+function readSnapshot(){
+  try{
+    const s=JSON.parse(localStorage.getItem(SNAP_KEY)||'null');
+    if(!s||Date.now()-s.ts>SNAP_TTL)return false;
+    if(Array.isArray(s.posts)&&s.posts.length){posts=s.posts;postsLoaded=s.posts.length;postsHasMore=true;}
+    if(Array.isArray(s.profiles))allProfiles=s.profiles;
+    if(Array.isArray(s.comments))comments=s.comments;
+    if(Array.isArray(s.likes))likes=s.likes;
+    if(Array.isArray(s.favorites))favorites=s.favorites;
+    if(Array.isArray(s.following))followingSet=new Set(s.following);
+    if(Array.isArray(s.followers))followerSet=new Set(s.followers);
+    if(Array.isArray(s.notifications)){notifications=s.notifications;myUnread=notifications.filter(n=>!n.is_read).length;}
+    if(Array.isArray(s.hidden))hiddenPosts=s.hidden.map(id=>({id}));
+    return true;
+  }catch(e){return false;}
+}
+// —— 他人主页帖子缓存：重复访问 TA 的主页时本地秒出，后台再对齐 ——
+const UH_CACHE_KEY='sm_uhposts_v1', UH_TTL=1000*60*10;
+function readUhCache(uid){
+  try{
+    const s=JSON.parse(localStorage.getItem(UH_CACHE_KEY)||'null');
+    if(!s||Date.now()-s.ts>UH_TTL)return null;
+    return s[uid]||null;
+  }catch(e){return null;}
+}
+function writeUhCache(uid,arr){
+  try{
+    const s=JSON.parse(localStorage.getItem(UH_CACHE_KEY)||'{}');
+    s[uid]=arr; s.ts=Date.now();
+    localStorage.setItem(UH_CACHE_KEY,JSON.stringify(s));
+  }catch(e){}
 }
 async function loadComments(){const {data,error}=await client.from('comments').select('*').order('created_at',{ascending:true});if(error){error.stage='读取 comments';throw error;}comments=data||[];}
 async function loadLikes(){const {data,error}=await client.from('post_likes').select('post_id,user_id,created_at');if(error){error.stage='读取 post_likes';throw error;}likes=data||[];}
@@ -1159,7 +1216,7 @@ async function saveProfile(){
   const n=$('nickInput').value.trim();if(!n){$('nickStatus').textContent='⚠️ 昵称不能为空';$('nickStatus').className='status err';return}
   const a=document.querySelector('.avatar-choice.selected')?.dataset.avatar||currentProfile.avatar;
   const patch={nickname:n,avatar:a,bio:$('bioInput').value.trim(),grade:$('gradeInput').value.trim(),class_name:$('classInput').value.trim(),real_name:$('realNameInput').value.trim(),real_name_public:$('realNamePublic').checked,show_follows:$('showFollows').checked};
-  const {data,error}=await client.from('profiles').update(patch).eq('id',currentUser.id).select('*').single();
+  const {data,error}=await client.from('profiles').update(patch).eq('id',currentUser?.id).select('*').single();
   if(error){$('nickStatus').textContent='保存失败：'+error.message;$('nickStatus').className='status err';return;}
   currentProfile=data;const i=allProfiles.findIndex(x=>x.id===data.id);if(i>=0)allProfiles[i]=data;else allProfiles.push(data);updateUserUI();renderPosts();renderMyPage();closeUser();toast('资料已保存');
 }
@@ -1189,7 +1246,7 @@ async function submitReport(){
   const sel=document.querySelector('.report-reason.selected');
   if(!sel){$('reportStatus').textContent='⚠️ 请先选择举报原因';$('reportStatus').className='status err';return}
   const label=sel.dataset.label||'',detail=$('reportDetail').value.trim();
-  const payload={target_type:reportTarget.type,target_id:reportTarget.id,reporter_id:currentUser.id,reason:label,detail};
+  const payload={target_type:reportTarget.type,target_id:reportTarget.id,reporter_id:currentUser?.id,reason:label,detail};
   // 乐观交互：先关弹窗提示成功，后台静默提交；失败再toast（避免等数据库 round-trip 的卡顿感）
   $('reportModal').classList.add('hide');toast('已提交举报，管理员会尽快处理');
   try{
@@ -1524,7 +1581,7 @@ function blobToDataURL(blob){return new Promise((res,rej)=>{const r=new FileRead
 // 上传到 Supabase Storage，返回公开 URL（走 CDN 缓存）；若未配置 Storage 则降级为 base64，不阻断发帖
 async function uploadImage(blob){
   try{
-    const path=`${currentUser.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+    const path=`${currentUser?.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
     const {data,error}=await client.storage.from(STORAGE_BUCKET).upload(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:'31536000'});
     if(error)throw error;
     return client.storage.from(STORAGE_BUCKET).getPublicUrl(data.path).data.publicUrl;
@@ -1543,7 +1600,7 @@ async function publishPost(){
   $('publishBtn').disabled=true;
   try{
     const images=[...pendingPostImages];
-    const {data,error}=await client.from('posts').insert({author_id:currentUser.id,category,content:content||'',images,anonymous}).select('*').single();
+    const {data,error}=await client.from('posts').insert({author_id:currentUser?.id,category,content:content||'',images,anonymous}).select('*').single();
     if(error)throw error;
     $('textVal').value='';$('charCount').textContent='0 / 2000';$('anonCheck').checked=false;pendingPostImages=[];renderPostPreview();
     // Show the newly published post immediately; refresh supporting data in parallel afterward.
@@ -1565,10 +1622,10 @@ function getStatsCache(){
 }
 function invalidateStats(){statsCache=null;}
 function postStats(id){return getStatsCache().get(id)||{likes:0,favorites:0,comments:0,score:0};}
-function isLiked(id){return likes.some(x=>x.post_id===id&&x.user_id===currentUser.id)}
-function isFav(id){return favorites.some(x=>x.post_id===id&&x.user_id===currentUser.id)}
-function canDeletePost(p){return p.author_id===currentUser.id||!!currentProfile?.is_admin}
-function canDeleteComment(c){return c.author_id===currentUser.id||!!currentProfile?.is_admin}
+function isLiked(id){return likes.some(x=>x.post_id===id&&x.user_id===currentUser?.id)}
+function isFav(id){return favorites.some(x=>x.post_id===id&&x.user_id===currentUser?.id)}
+function canDeletePost(p){return p.author_id===currentUser?.id||!!currentProfile?.is_admin}
+function canDeleteComment(c){return c.author_id===currentUser?.id||!!currentProfile?.is_admin}
 
 function postHotScore(p){
   // 互动权重：评论比点赞更能体现热度，收藏次之
@@ -1605,7 +1662,7 @@ function renderPosts(animate=true){
 }
 function imageGrid(images){if(!images?.length)return '';return `<div class="image-grid c${Math.min(images.length,3)}">${images.map((s,i)=>`<div class="image-item" data-lightbox="${esc(s)}"><img src="${s}" alt="图片 ${i+1}" loading="lazy" decoding="async"></div>`).join('')}</div>`}
 function postHtml(p){
-  const st=postStats(p.id),liked=isLiked(p.id),fav=isFav(p.id),me=p.author_id===currentUser.id,prof=profileFor(p.author_id),name=displayName(p.author_id,p.anonymous),av=prof?.avatar||'😀',admin=!!p.is_admin,canManage=me||isAdmin();
+  const st=postStats(p.id),liked=isLiked(p.id),fav=isFav(p.id),me=p.author_id===currentUser?.id,prof=profileFor(p.author_id),name=displayName(p.author_id,p.anonymous),av=prof?.avatar||'😀',admin=!!p.is_admin,canManage=me||isAdmin();
   const authorAttr=p.anonymous?'':`data-author="${p.author_id}"`;
   const socialBtns=me?'':`<button class="action" data-act="follow" data-uid="${p.author_id}">${followingSet.has(p.author_id)?'✅ 已关注':'➕ 关注'}</button><button class="action" data-act="dm" data-uid="${p.author_id}">💬 私信</button>`;
   return `<article class="card post-card ${p.is_admin||p.is_pinned?'pinned':''}" data-id="${p.id}">
@@ -1627,7 +1684,7 @@ function postHtml(p){
     </div>
   </article>`;
 }
-function commentHtml(c){const prof=profileFor(c.author_id),name=displayName(c.author_id,!!c.anonymous),av=prof?.avatar||'😀';const aAttr=c.anonymous?'':`data-author="${c.author_id}"`;return `<div class="comment"><div class="comment-avatar" ${aAttr}>${esc(av)}</div><div class="comment-body"><div class="comment-head"><strong ${aAttr}>${esc(name)}</strong>${c.is_admin?'<span class="admin-badge">管理员</span>':''}${c.is_pinned?'<span class="pin pin-top" style="font-size:11px">📌 置顶</span>':''}${timeHtml(c.created_at,'comment-time')}${c.author_id!==currentUser.id?`<button class="comment-del" data-act="report" data-ctype="comment" data-cid="${c.id}">举报</button>`:''}${isAdmin()?`<button class="comment-del" data-act="${c.is_pinned?'unpincomment':'pincomment'}" data-cid="${c.id}">${c.is_pinned?'取消置顶':'📌 置顶'}</button>`:''}${canDeleteComment(c)?`<button class="comment-del" data-act="delcomment" data-cid="${c.id}">删除</button>`:''}</div><div class="comment-text">${esc(c.content)}</div>${(c.images||[]).map(s=>`<div class="comment-img" data-lightbox="${esc(s)}"><img src="${s}" alt="评论图片" loading="lazy" decoding="async"></div>`).join('')}</div></div>`}
+function commentHtml(c){const prof=profileFor(c.author_id),name=displayName(c.author_id,!!c.anonymous),av=prof?.avatar||'😀';const aAttr=c.anonymous?'':`data-author="${c.author_id}"`;return `<div class="comment"><div class="comment-avatar" ${aAttr}>${esc(av)}</div><div class="comment-body"><div class="comment-head"><strong ${aAttr}>${esc(name)}</strong>${c.is_admin?'<span class="admin-badge">管理员</span>':''}${c.is_pinned?'<span class="pin pin-top" style="font-size:11px">📌 置顶</span>':''}${timeHtml(c.created_at,'comment-time')}${c.author_id!==currentUser?.id?`<button class="comment-del" data-act="report" data-ctype="comment" data-cid="${c.id}">举报</button>`:''}${isAdmin()?`<button class="comment-del" data-act="${c.is_pinned?'unpincomment':'pincomment'}" data-cid="${c.id}">${c.is_pinned?'取消置顶':'📌 置顶'}</button>`:''}${canDeleteComment(c)?`<button class="comment-del" data-act="delcomment" data-cid="${c.id}">删除</button>`:''}</div><div class="comment-text">${esc(c.content)}</div>${(c.images||[]).map(s=>`<div class="comment-img" data-lightbox="${esc(s)}"><img src="${s}" alt="评论图片" loading="lazy" decoding="async"></div>`).join('')}</div></div>`}
 
 // 事件委托：feed 内的所有点击/选择事件只在容器上绑定一次，避免每次重建信息流后重绑几百个监听器
 let feedDelegated=false;
@@ -1675,7 +1732,7 @@ function onFeedClick(e){
 
 // ===== 帖子详情页（覆盖层） =====
 function openPostDetail(id){
-  const p=posts.find(x=>x.id===id);if(!p)return;
+  const p=getPost(id);if(!p)return;
   if(!$('userHome').classList.contains('hide'))closeUserProfile();
   detailOpen=true;detailPostId=id;
   renderDetail(p);
@@ -1690,7 +1747,7 @@ function closePostDetail(){
   unlockScroll();
 }
 function renderDetail(p){
-  const st=postStats(p.id),liked=isLiked(p.id),fav=isFav(p.id),me=p.author_id===currentUser.id,prof=profileFor(p.author_id),name=displayName(p.author_id,p.anonymous),av=prof?.avatar||'😀',admin=!!p.is_admin,canManage=me||isAdmin();
+  const st=postStats(p.id),liked=isLiked(p.id),fav=isFav(p.id),me=p.author_id===currentUser?.id,prof=profileFor(p.author_id),name=displayName(p.author_id,p.anonymous),av=prof?.avatar||'😀',admin=!!p.is_admin,canManage=me||isAdmin();
   $('detailBody').innerHTML=`<div class="card detail-post">
     <div class="post-head"><div class="avatar">${esc(av)}</div><div style="min-width:0;flex:1"><div class="post-user">${esc(name)} ${admin?'<span class="admin-badge">管理员</span>':''}</div>${timeHtml(p.created_at)}</div></div>
     <div class="post-meta"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${p.is_admin?'<span class="pin">👑 管理员发布</span>':''}${p.is_pinned?'<span class="pin pin-top">📌 置顶</span>':''}${p.is_hidden?'<span class="hidden-badge">🚫 已隐藏</span>':''}</div>
@@ -1742,14 +1799,14 @@ function warnViewHistoryOnce(e){
   else toast('浏览记录失败：'+(e?.message||'未知错误'));
 }
 async function recordView(id){
-  const p=posts.find(x=>x.id===id);if(!p)return;
+  const p=getPost(id);if(!p)return;
   if(!viewedSet.has(id)){viewedSet.add(id);p.views=(p.views||0)+1;updateDetailStats(id);}
   if(!currentUser)return;
-  try{const {error}=await client.from('view_history').upsert({user_id:currentUser.id,post_id:id,created_at:new Date().toISOString()},{onConflict:'user_id,post_id'});if(error)throw error;}catch(e){console.warn('记录浏览失败',e);warnViewHistoryOnce(e);}
+  try{const {error}=await client.from('view_history').upsert({user_id:currentUser?.id,post_id:id,created_at:new Date().toISOString()},{onConflict:'user_id,post_id'});if(error)throw error;}catch(e){console.warn('记录浏览失败',e);warnViewHistoryOnce(e);}
 }
 function updateDetailStats(id){
   if(!detailOpen||detailPostId!==id)return;
-  const p=posts.find(x=>x.id===id);if(!p)return;
+  const p=getPost(id);if(!p)return;
   const st=postStats(id);const el=document.querySelector('#detailBody .detail-stats');if(!el)return;
   el.innerHTML=`<span><b>${p.views||0}</b>浏览</span><span><b>${st.likes}</b>点赞</span><span><b>${st.favorites}</b>收藏</span><span><b>${st.comments}</b>评论</span>`;
 }
@@ -1794,7 +1851,7 @@ function bindDetail(){
 }
 async function refreshHistory(){
   try{
-    const {data,error}=await client.from('view_history').select('*, posts(*)').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(200);
+    const {data,error}=await client.from('view_history').select('*, posts(*)').eq('user_id',currentUser?.id).order('created_at',{ascending:false}).limit(200);
     if(error)throw error;
     myHistory=data||[];
     if(myTab==='history')renderMyPage();
@@ -1823,7 +1880,7 @@ function updatePostActions(id){
 }
 // 只重建单条帖子卡片（用于发评论/删评论后局部更新）
 function rerenderPost(id){
-  const p=posts.find(x=>x.id===id);
+  const p=getPost(id);
   const el=document.querySelector(`.post-card[data-id="${id}"]`);
   if(!p){el?.remove();return;}
   if(!el)return;
@@ -1832,31 +1889,31 @@ function rerenderPost(id){
   el.replaceWith(newCard);bindFeed();
 }
 async function toggleLike(id){
-  const existed=likes.some(x=>x.post_id===id&&x.user_id===currentUser.id);
+  const existed=likes.some(x=>x.post_id===id&&x.user_id===currentUser?.id);
   // 乐观更新：先改本地状态并立刻刷新按钮，再异步写库，失败回滚
-  if(existed)likes=likes.filter(x=>!(x.post_id===id&&x.user_id===currentUser.id));
-  else likes=[...likes,{post_id:id,user_id:currentUser.id}];
+  if(existed)likes=likes.filter(x=>!(x.post_id===id&&x.user_id===currentUser?.id));
+  else likes=[...likes,{post_id:id,user_id:currentUser?.id}];
   updatePostActions(id);if(activePage==='my')renderMyPage();
   try{
-    if(existed){const {error}=await client.from('post_likes').delete().eq('post_id',id).eq('user_id',currentUser.id);if(error)throw error;}
-    else{const {error}=await client.from('post_likes').insert({post_id:id,user_id:currentUser.id});if(error)throw error;}
+    if(existed){const {error}=await client.from('post_likes').delete().eq('post_id',id).eq('user_id',currentUser?.id);if(error)throw error;}
+    else{const {error}=await client.from('post_likes').insert({post_id:id,user_id:currentUser?.id});if(error)throw error;}
   }catch(e){
-    if(existed)likes=[...likes,{post_id:id,user_id:currentUser.id}];
-    else likes=likes.filter(x=>!(x.post_id===id&&x.user_id===currentUser.id));
+    if(existed)likes=[...likes,{post_id:id,user_id:currentUser?.id}];
+    else likes=likes.filter(x=>!(x.post_id===id&&x.user_id===currentUser?.id));
     updatePostActions(id);if(activePage==='my')renderMyPage();toast('点赞操作失败：'+e.message);
   }
 }
 async function toggleFav(id){
-  const existed=favorites.some(x=>x.post_id===id&&x.user_id===currentUser.id);
-  if(existed)favorites=favorites.filter(x=>!(x.post_id===id&&x.user_id===currentUser.id));
-  else favorites=[...favorites,{post_id:id,user_id:currentUser.id}];
+  const existed=favorites.some(x=>x.post_id===id&&x.user_id===currentUser?.id);
+  if(existed)favorites=favorites.filter(x=>!(x.post_id===id&&x.user_id===currentUser?.id));
+  else favorites=[...favorites,{post_id:id,user_id:currentUser?.id}];
   updatePostActions(id);if(activePage==='my')renderMyPage();
   try{
-    if(existed){const {error}=await client.from('post_favorites').delete().eq('post_id',id).eq('user_id',currentUser.id);if(error)throw error;}
-    else{const {error}=await client.from('post_favorites').insert({post_id:id,user_id:currentUser.id});if(error)throw error;}
+    if(existed){const {error}=await client.from('post_favorites').delete().eq('post_id',id).eq('user_id',currentUser?.id);if(error)throw error;}
+    else{const {error}=await client.from('post_favorites').insert({post_id:id,user_id:currentUser?.id});if(error)throw error;}
   }catch(e){
-    if(existed)favorites=[...favorites,{post_id:id,user_id:currentUser.id}];
-    else favorites=favorites.filter(x=>!(x.post_id===id&&x.user_id===currentUser.id));
+    if(existed)favorites=[...favorites,{post_id:id,user_id:currentUser?.id}];
+    else favorites=favorites.filter(x=>!(x.post_id===id&&x.user_id===currentUser?.id));
     updatePostActions(id);if(activePage==='my')renderMyPage();toast('收藏操作失败：'+e.message);
   }
 }
@@ -1884,7 +1941,7 @@ async function sendComment(id){
   const input=$('ci-'+id),content=input.value.trim(),imgs=pendingCommentImages[id]||[],anonymous=!!document.querySelector(`.comment-anon[data-id="${id}"]`)?.checked;
   if(!content){toast('请输入评论文字');return}
   const btn=document.querySelector(`[data-act="sendcomment"][data-id="${id}"]`);if(btn){btn.disabled=true;btn.textContent='发送中…'}
-  const {data,error}=await client.from('comments').insert({post_id:id,author_id:currentUser.id,content:content||'',images:imgs,anonymous}).select('*').single();
+  const {data,error}=await client.from('comments').insert({post_id:id,author_id:currentUser?.id,content:content||'',images:imgs,anonymous}).select('*').single();
   if(btn){btn.disabled=false;btn.textContent='发送'}
   if(error){toast('评论失败：'+error.message);return}
   input.value='';pendingCommentImages[id]=[];
@@ -1898,11 +1955,11 @@ async function loadMyData(){
     // 并行拉取：我的帖子 / 我的评论 / 隐藏帖，减少串行等待
     const admin=isAdmin();
     const [mpR,mcR,hpR]=await Promise.all([
-      client.from('posts').select('*').eq('author_id',currentUser.id),
-      client.from('comments').select('*').eq('author_id',currentUser.id),
+      client.from('posts').select('*').eq('author_id',currentUser?.id),
+      client.from('comments').select('*').eq('author_id',currentUser?.id),
       (async()=>{
         let hq=client.from('posts').select('*').eq('is_hidden',true).order('created_at',{ascending:false});
-        if(!admin)hq=hq.eq('author_id',currentUser.id);
+        if(!admin)hq=hq.eq('author_id',currentUser?.id);
         const {data,error}=await hq;
         return error?{data:null,err:error}:null;
       })()
@@ -1910,7 +1967,7 @@ async function loadMyData(){
     myPosts=mpR.data||[];myComments=mcR.data||[];
     if(hpR){if(hpR.err){console.warn('读取隐藏帖子失败（请先在 Supabase 运行 management-setup.sql）',hpR.err);hiddenPosts=[]}else hiddenPosts=hpR.data||[]}
     // 父帖子（评论/点赞/收藏对应的帖子）：依赖上一步结果，单独并行
-    const ids=[...new Set([...myComments.map(c=>c.post_id),...likes.filter(x=>x.user_id===currentUser.id).map(x=>x.post_id),...favorites.filter(x=>x.user_id===currentUser.id).map(x=>x.post_id)])];
+    const ids=[...new Set([...myComments.map(c=>c.post_id),...likes.filter(x=>x.user_id===currentUser?.id).map(x=>x.post_id),...favorites.filter(x=>x.user_id===currentUser?.id).map(x=>x.post_id)])];
     if(ids.length){const {data:pp}=await client.from('posts').select('*').in('id',ids);myParentPosts=Object.fromEntries((pp||[]).map(p=>[p.id,p]));}
     else myParentPosts={};
   }catch(e){console.warn('读取我的数据失败',e);}
@@ -1919,7 +1976,7 @@ async function loadMyData(){
 async function refreshHidden(){
   try{
     let hq=client.from('posts').select('*').eq('is_hidden',true).order('created_at',{ascending:false});
-    if(!isAdmin())hq=hq.eq('author_id',currentUser.id);
+    if(!isAdmin())hq=hq.eq('author_id',currentUser?.id);
     const {data:hp,error:he}=await hq;
     if(he)throw he;hiddenPosts=hp||[];
     if(myTab==='hidden')renderMyPage();
@@ -1951,7 +2008,7 @@ function renderMyPage(animate=false){
 }else if(myTab==='hidden'){const a=hiddenPosts;box.innerHTML=a.length?a.map(p=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${isAdmin()?`<button class="mini" data-myact="restore" data-id="${p.id}">♻️ 恢复</button>`:''}</div><div class="post-content" style="margin-top:10px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><div style="display:flex;align-items:center;margin-top:6px"><span style="font-size:12px;color:var(--muted)">作者：${esc(displayName(p.author_id,p.anonymous))}</span>${timeHtml(p.created_at)}</div></div>`).join(''):'<div class="empty"><span class="emoji">🚫</span>没有隐藏的帖子</div>'
   }else if(myTab==='history'){const a=myHistory;box.innerHTML=a.length?a.map(h=>{const p=h.posts;return p?`<div style="margin-bottom:14px"><div class="history-time">浏览于 ${timeHtml(h.created_at)}</div>${postHtml(p)}</div>`:''}).filter(Boolean).join(''):'<div class="empty"><span class="emoji">🕘</span>你还没有浏览过任何帖子</div>';}else if(myTab==='following'){const a=[...followingSet];box.innerHTML=a.length?a.map(uid=>userRowHtml(uid)).join(''):'<div class="empty"><span class="emoji">➕</span>你还没有关注任何人</div>';
   }else if(myTab==='followers'){const a=[...followerSet];box.innerHTML=a.length?a.map(uid=>userRowHtml(uid,true)).join(''):'<div class="empty"><span class="emoji">👥</span>还没有人关注你</div>';
-  }else{const ids=(myTab==='likes'?likes:favorites).filter(x=>x.user_id===currentUser.id).map(x=>x.post_id);const arr=ids.map(id=>myParentPosts[id]).filter(Boolean);box.innerHTML=arr.length?arr.map(p=>`<div class="card" style="margin-bottom:12px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><div class="post-content" style="margin-top:9px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><button class="action ${myTab==='likes'?'like-on':'fav-on'}" data-myact="${myTab==='likes'?'unlike':'unfav'}" data-id="${p.id}">${myTab==='likes'?'❤️ 取消点赞':'⭐ 取消收藏'}</button></div>`).join(''):`<div class="empty"><span class="emoji">${myTab==='likes'?'❤️':'⭐'}</span>${myTab==='likes'?'你还没有点赞过帖子哦':'你还没有收藏过帖子哦'}</div>`}
+  }else{const ids=(myTab==='likes'?likes:favorites).filter(x=>x.user_id===currentUser?.id).map(x=>x.post_id);const arr=ids.map(id=>myParentPosts[id]).filter(Boolean);box.innerHTML=arr.length?arr.map(p=>`<div class="card" style="margin-bottom:12px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><div class="post-content" style="margin-top:9px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><button class="action ${myTab==='likes'?'like-on':'fav-on'}" data-myact="${myTab==='likes'?'unlike':'unfav'}" data-id="${p.id}">${myTab==='likes'?'❤️ 取消点赞':'⭐ 取消收藏'}</button></div>`).join(''):`<div class="empty"><span class="emoji">${myTab==='likes'?'❤️':'⭐'}</span>${myTab==='likes'?'你还没有点赞过帖子哦':'你还没有收藏过帖子哦'}</div>`}
   if(animate){box.classList.remove('tab-panel-enter');void box.offsetWidth;box.classList.add('tab-panel-enter');box.addEventListener('animationend',()=>box.classList.remove('tab-panel-enter'),{once:true});}
   else box.classList.remove('tab-panel-enter');
   box.querySelectorAll('[data-myact="delete"]').forEach(b=>b.onclick=()=>deletePost(b.dataset.id));box.querySelectorAll('[data-myact="delcomment"]').forEach(b=>b.onclick=()=>deleteComment(b.dataset.id));box.querySelectorAll('[data-myact="unlike"]').forEach(b=>b.onclick=()=>toggleLike(b.dataset.id));box.querySelectorAll('[data-myact="unfav"]').forEach(b=>b.onclick=()=>toggleFav(b.dataset.id));box.querySelectorAll('[data-myact="restore"]').forEach(b=>b.onclick=()=>restorePost(b.dataset.id));
@@ -1966,8 +2023,8 @@ function isFollowing(uid){return followingSet.has(uid)}
 async function loadFollows(){
   try{
     const [{data:f1},{data:f2}]=await Promise.all([
-      client.from('follows').select('following_id').eq('follower_id',currentUser.id),
-      client.from('follows').select('follower_id').eq('following_id',currentUser.id)
+      client.from('follows').select('following_id').eq('follower_id',currentUser?.id),
+      client.from('follows').select('follower_id').eq('following_id',currentUser?.id)
     ]);
     followingSet=new Set((f1||[]).map(x=>x.following_id));
     followerSet=new Set((f2||[]).map(x=>x.follower_id));
@@ -1976,14 +2033,14 @@ async function loadFollows(){
   }catch(e){console.warn('读取关注失败',e)}
 }
 async function toggleFollow(uid){
-  if(uid===currentUser.id){toast('不能关注自己');return}
+  if(uid===currentUser?.id){toast('不能关注自己');return}
   const following=followingSet.has(uid);
   // 乐观更新：先本地改并立刻刷新界面，再异步写库，失败回滚
   if(following)followingSet.delete(uid);else followingSet.add(uid);
   updateUserUI();renderPosts();renderMyPage();refreshFollowButton(uid);
   try{
-    if(following){const {error}=await client.from('follows').delete().eq('follower_id',currentUser.id).eq('following_id',uid);if(error)throw error;}
-    else{const {error}=await client.from('follows').insert({follower_id:currentUser.id,following_id:uid});if(error)throw error;}
+    if(following){const {error}=await client.from('follows').delete().eq('follower_id',currentUser?.id).eq('following_id',uid);if(error)throw error;}
+    else{const {error}=await client.from('follows').insert({follower_id:currentUser?.id,following_id:uid});if(error)throw error;}
     toast(following?'已取消关注':'已关注');
   }catch(e){
     if(following)followingSet.add(uid);else followingSet.delete(uid);
@@ -2000,7 +2057,7 @@ function refreshFollowButton(uid){
   btn.classList.toggle('primary',!now);
 }
 function openUserProfile(uid){
-  if(!uid||uid===currentUser.id){if(!$('postDetail').classList.contains('hide'))closePostDetail();switchPage('my');return;}
+  if(!uid||uid===currentUser?.id){if(!$('postDetail').classList.contains('hide'))closePostDetail();switchPage('my');return;}
   if(!$('postDetail').classList.contains('hide'))closePostDetail();
   userHomeUid=uid;
   renderUserProfile(uid,profileFor(uid));
@@ -2016,11 +2073,14 @@ async function renderUserProfile(uid,prof){
   $('uhMeta').textContent=[prof.grade,prof.class_name].filter(Boolean).join(' · ')||'思茅一中 · 在校学生';
   $('uhBio').textContent=prof.bio||'这个人很懒，什么都没写～';
   $('uhStats').innerHTML='<span><b>…</b>关注</span><span><b>…</b>粉丝</span>';
-  const me=uid===currentUser.id;
+  const me=uid===currentUser?.id;
   const following=followingSet.has(uid);
   $('uhActions').innerHTML=me?'':`<button class="mini" data-uhact="dm" data-uid="${uid}">✉️ 私信</button><button class="mini ${following?'':'primary'}" data-uhact="follow" data-uid="${uid}">${following?'✅ 已关注':'➕ 关注'}</button><button class="mini" data-uhact="report" data-uid="${uid}">🚨 举报</button>`;
   $('uhActions').querySelectorAll('[data-uhact]').forEach(b=>b.onclick=()=>{const a=b.dataset.uhact;if(a==='follow')toggleFollow(uid);else if(a==='dm')startDM(uid);else if(a==='report')openReport('user',uid);});
-  $('uhPosts').innerHTML='<div class="empty"><span class="emoji">⏳</span>加载中…</div>';
+  // 本地缓存优先：重复访问 TA 的主页时动态秒出，后台再对齐
+  const uhCached=readUhCache(uid);
+  if(uhCached){profilePosts=uhCached;$('uhPosts').innerHTML=uhCached.length?uhCached.map(postHtml).join(''):'<div class="empty"><span class="emoji">📭</span>TA还没有发布过公开动态</div>';}
+  else $('uhPosts').innerHTML='<div class="empty"><span class="emoji">⏳</span>加载中…</div>';
   // 三个查询并行，一次拿到全部数据
   try{
     const [fr,gr,pr]=await Promise.all([
@@ -2030,9 +2090,10 @@ async function renderUserProfile(uid,prof){
     ]);
     if(userHomeUid!==uid)return; // 已翻页到其他主页，丢弃过期结果
     $('uhStats').innerHTML=`<span><b>${fr.count||0}</b>关注</span><span><b>${gr.count||0}</b>粉丝</span>`;
-    const data=pr.data;
-    $('uhPosts').innerHTML=data&&data.length?data.map(postHtml).join(''):'<div class="empty"><span class="emoji">📭</span>TA还没有发布过公开动态</div>';
-  }catch(e){$('uhPosts').innerHTML='<div class="empty">加载失败，下拉重试</div>';}
+    const data=pr.data||[];
+    $('uhPosts').innerHTML=data.length?data.map(postHtml).join(''):'<div class="empty"><span class="emoji">📭</span>TA还没有发布过公开动态</div>';
+    profilePosts=data; writeUhCache(uid,data);
+  }catch(e){if(!uhCached)$('uhPosts').innerHTML='<div class="empty">加载失败，下拉重试</div>';}
 }
 function userRowHtml(uid,followersView){
   const p=allProfiles.find(x=>x.id===uid)||{id:uid,nickname:'同学',avatar:'😀'};
@@ -2104,16 +2165,16 @@ function renderConversations(){
   const box=$('dmList');
   if(!conversations.length){box.innerHTML='<div class="empty"><span class="emoji">💬</span>还没有私信，去别人的主页点“私信”开始聊天吧</div>';return;}
   box.innerHTML=conversations.map(c=>{
-    const other=c.user_a===currentUser.id?c.user_b:c.user_a;
+    const other=c.user_a===currentUser?.id?c.user_b:c.user_a;
     return `<div class="dm-item" data-conv="${c.id}"><div class="avatar">${esc(profileFor(other)?.avatar||'😀')}</div><div class="dm-item-body"><div class="dm-item-name">${esc(displayName(other,false))}</div><div class="dm-item-sub">${c.unlocked?'':'🔒 '}私信会话</div></div></div>`;
   }).join('');
   box.querySelectorAll('.dm-item').forEach(el=>el.onclick=()=>openDMChat(el.dataset.conv));
 }
-function otherOf(c){return c.user_a===currentUser.id?c.user_b:c.user_a}
+function otherOf(c){return c.user_a===currentUser?.id?c.user_b:c.user_a}
 async function ensureConversation(otherId){
-  if(otherId===currentUser.id)throw new Error('不能给自己发私信');
-  const ua=currentUser.id<otherId?currentUser.id:otherId;
-  const ub=currentUser.id<otherId?otherId:currentUser.id;
+  if(otherId===currentUser?.id)throw new Error('不能给自己发私信');
+  const ua=currentUser?.id<otherId?currentUser?.id:otherId;
+  const ub=currentUser?.id<otherId?otherId:currentUser?.id;
   const {data,error}=await client.from('conversations').upsert({user_a:ua,user_b:ub,unlocked:false},{onConflict:'user_a,user_b'}).select('*').single();
   if(error)throw error;return data;
 }
@@ -2144,7 +2205,7 @@ function renderChat(convId,msgs){
   const box=$('dmMessages');
   if(!msgs.length){box.innerHTML='<div class="dm-empty">还没有消息，打个招呼吧～</div>';return;}
   box.innerHTML=msgs.map(m=>{
-    const mine=m.sender_id===currentUser.id;
+    const mine=m.sender_id===currentUser?.id;
     const img=m.image_url?`<img class="dm-img" src="${esc(m.image_url)}" data-lightbox="${esc(m.image_url)}">`:'';
     return `<div class="dm-msg ${mine?'mine':''}">${img}${m.content?`<div class="dm-bubble">${esc(m.content)}</div>`:''}<div class="dm-time">${timeHtml(m.created_at,'comment-time')}</div></div>`;
   }).join('');
@@ -2159,7 +2220,7 @@ async function sendDM(){
   try{
     // 首次私信需先确保会话存在
     if(!conversations.some(c=>c.id===activeConvId)){const other=otherOf(conversations.find(c=>c.id===activeConvId)||{user_a:'',user_b:''});}
-    const {error}=await client.from('messages').insert({conversation_id:activeConvId,sender_id:currentUser.id,content:text||'',image_url:imgs[0]||null});
+    const {error}=await client.from('messages').insert({conversation_id:activeConvId,sender_id:currentUser?.id,content:text||'',image_url:imgs[0]||null});
     if(error)throw error;
     input.value='';pendingDMImages=[];renderDMPreview();
     loadMessages(activeConvId);
@@ -2171,7 +2232,7 @@ async function sendDM(){
 }
 async function uploadDMImage(file){
   const blob=await compressImage(file,1000,.72);
-  const path=`${currentUser.id}/${activeConvId||'x'}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+  const path=`${currentUser?.id}/${activeConvId||'x'}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
   const {data,error}=await client.storage.from('dm-images').upload(path,blob,{contentType:'image/jpeg',upsert:false});
   if(error)throw error;
   const r=await client.storage.from('dm-images').createSignedUrl(data.path,31536000);
@@ -2189,7 +2250,7 @@ function openDMReport(convId,msgId){
 async function submitDMReport(){
   const sel=document.querySelector('#dmReportReasons .report-reason.selected');
   if(!sel){$('dmReportStatus').textContent='⚠️ 请先选择举报原因';$('dmReportStatus').className='status err';return;}
-  const payload={reporter_id:currentUser.id,conversation_id:dmReportTarget.convId,message_id:dmReportTarget.msgId,reported_id:dmReportTarget.reportedId,reason:sel.dataset.label,detail:$('dmReportDetail').value.trim()};
+  const payload={reporter_id:currentUser?.id,conversation_id:dmReportTarget.convId,message_id:dmReportTarget.msgId,reported_id:dmReportTarget.reportedId,reason:sel.dataset.label,detail:$('dmReportDetail').value.trim()};
   // 乐观交互：先关弹窗，后台静默提交
   $('dmReportModal').classList.add('hide');toast('已提交举报，管理员会尽快处理');
   try{
@@ -2203,12 +2264,12 @@ function subscribeRealtime(){
   if(!client||!currentUser||rtSubscribed)return;
   rtSubscribed=true;
   try{
-    client.channel('notif-'+currentUser.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'recipient_id=eq.'+currentUser.id},(payload)=>{
+    client.channel('notif-'+currentUser?.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'recipient_id=eq.'+currentUser?.id},(payload)=>{
       loadNotifications().catch(()=>{});
       const n=payload.new;
       if(n&&n.type==='report_admin'&&isAdmin())refreshAdminReports();
     }).subscribe();
-    client.channel('dm-'+currentUser.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},(payload)=>{
+    client.channel('dm-'+currentUser?.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},(payload)=>{
       const m=payload.new;if(!m)return;
       if(activeConvId&&m.conversation_id===activeConvId)loadMessages(activeConvId);
       loadConversations().catch(()=>{});
