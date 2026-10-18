@@ -111,7 +111,7 @@ textarea::placeholder{color:#a8b2c1}
 .comment-input-row{display:flex;gap:7px;align-items:center;margin-top:10px}
 .comment-photo{width:38px;height:38px;border:1px solid var(--border);background:#fff;border-radius:9px;display:grid;place-items:center;color:var(--sub)}
 .comment-input{flex:1;min-width:0;border:1px solid var(--border);background:#f8fafc;border-radius:9px;padding:9px 12px;outline:0;font-size:13px}
-.comment-input:focus{background:#fff;border-color:var(--primary)}.comment-send{border:0;background:var(--primary);color:#fff;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700}
+.comment-input:focus{background:#fff;border-color:var(--primary)}.comment-send{border:0;background:var(--primary);color:#fff;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700}.comment-count{font-size:11px;color:var(--sub);white-space:nowrap;align-self:center;flex:0 0 auto}
 .empty{text-align:center;padding:50px 20px;color:var(--muted)}.empty .emoji{font-size:38px;display:block;margin-bottom:10px}
 .my-page{background:#fff;border:1px solid rgba(226,232,240,.75);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
 .my-info{display:flex;align-items:center;gap:15px;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:18px;flex-wrap:wrap}
@@ -525,7 +525,7 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
 .dm-input-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #eef2f7;background:#fff;flex-wrap:wrap}
 .dm-input{flex:1;min-width:0;border:1px solid var(--border);background:#f8fafc;border-radius:10px;padding:10px 12px;outline:0}
 .dm-input:focus{background:#fff;border-color:var(--primary)}
-.dm-send{border:0;background:var(--primary);color:#fff;border-radius:10px;padding:10px 16px;font-weight:700}
+.dm-send{border:0;background:var(--primary);color:#fff;border-radius:10px;padding:10px 16px;font-weight:700}.dm-count{font-size:12px;color:var(--sub);white-space:nowrap;align-self:center;flex:0 0 auto}
 .dm-photo{width:40px;border:1px solid var(--border);background:#fff;border-radius:10px;display:grid;place-items:center;color:var(--sub);font-size:18px}
 .profile-field{margin-bottom:12px}
 .profile-field label{display:block;font-size:12px;color:var(--sub);font-weight:600;margin-bottom:5px}
@@ -810,7 +810,7 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
       <div class="dm-bar"><button class="dm-back" id="dmBack">← 会话</button><div class="dm-bar-title" id="dmChatName"></div></div>
       <div class="dm-messages" id="dmMessages"></div>
       <div class="preview-list" id="dmPreview" style="width:100%;padding:0 12px"></div>
-      <div class="dm-input-row"><button class="dm-photo" id="dmPhoto">📷</button><input type="text" class="dm-input" id="dmInput" placeholder="发条私信…" maxlength="2000"><button class="dm-send" id="dmSend">发送</button><input type="file" id="dmImageInput" accept="image/*" class="hidden-file"></div>
+      <div class="dm-input-row"><button class="dm-photo" id="dmPhoto">📷</button><input type="text" class="dm-input" id="dmInput" placeholder="发条私信…（最多500字）" maxlength="500"><span class="dm-count" id="dmCount">0/500</span><button class="dm-send" id="dmSend">发送</button><input type="file" id="dmImageInput" accept="image/*" class="hidden-file"></div>
     </div>
   </div>
 </div>
@@ -1255,6 +1255,7 @@ function bindEvents(){
   $('dmReportBtn').onclick=()=>{if(activeConvId)openDMReport(activeConvId,null)};
   $('dmSend').onclick=sendDM;
   $('dmInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendDM()}});
+  $('dmInput').addEventListener('input',e=>{const c=$('dmCount');if(c)c.textContent=e.target.value.length+'/500'});
   $('dmPhoto').onclick=()=>$('dmImageInput').click();
   $('dmImageInput').onchange=async e=>{for(const f of e.target.files){try{const url=await uploadDMImage(f);pendingDMImages.push(url);}catch(e){toast('图片处理失败')}}e.target.value='';renderDMPreview();};
   $('dmReportCancel').onclick=()=>$('dmReportModal').classList.add('hide');
@@ -1783,6 +1784,8 @@ function onFeedClick(e){
     switch(b.dataset.act){
       case 'like':toggleLike(id);break;
       case 'fav':toggleFav(id);break;
+      case 'follow':toggleFollow(b.dataset.uid);break;
+      case 'dm':startDM(b.dataset.uid);break;
       case 'delete':deletePost(id);break;
       case 'sendcomment':sendComment(id);break;
       case 'photo':{const f=document.querySelector('.cinput-file[data-id="'+id+'"]');if(f)f.click();break;}
@@ -1827,8 +1830,9 @@ function closePostDetail(){
 }
 function renderDetail(p){
   const st=postStats(p.id),liked=isLiked(p.id),fav=isFav(p.id),me=p.author_id===currentUser?.id,prof=profileFor(p.author_id),name=displayName(p.author_id,p.anonymous),av=prof?.avatar||'😀',admin=!!p.is_admin,canManage=me||isAdmin();
+  const authorAttr=p.anonymous?'':`data-author="${p.author_id}"`;
   $('detailBody').innerHTML=`<div class="card detail-post">
-    <div class="post-head"><div class="avatar">${esc(av)}</div><div style="min-width:0;flex:1"><div class="post-user">${esc(name)} ${admin?'<span class="admin-badge">管理员</span>':''}</div>${timeHtml(p.created_at)}</div></div>
+    <div class="post-head"><div class="avatar" ${authorAttr}>${esc(av)}</div><div style="min-width:0;flex:1"><div class="post-user" ${authorAttr}>${esc(name)} ${admin?'<span class="admin-badge">管理员</span>':''}</div>${timeHtml(p.created_at)}</div></div>
     <div class="post-meta"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${p.is_admin?'<span class="pin">👑 管理员发布</span>':''}${p.is_pinned?'<span class="pin pin-top">📌 置顶</span>':''}${p.is_hidden?'<span class="hidden-badge">🚫 已隐藏</span>':''}</div>
     <div class="post-content">${esc(p.content)}</div>
     ${imageGrid(p.images)}
@@ -1850,7 +1854,7 @@ function renderDetail(p){
         <label class="anon" style="display:inline-flex;margin:0 0 8px"><input type="checkbox" class="comment-anon" data-id="${p.id}"> 匿名评论</label>
         <div class="reply-hint" id="replyHint" style="display:none">↩️ 正在回复 <b id="replyName"></b> <span class="reply-cancel" data-act="cancelreply">✕ 取消</span></div>
         <div class="preview-list" id="detailPreview"></div>
-        <div class="comment-input-row"><button class="comment-photo" data-act="photo" data-id="${p.id}">📷</button><input type="text" class="comment-input" id="ci-${p.id}" placeholder="写下你的评论…" maxlength="1000"><button class="comment-send primary-btn" data-act="sendcomment" data-id="${p.id}">发送</button></div>
+        <div class="comment-input-row"><button class="comment-photo" data-act="photo" data-id="${p.id}">📷</button><input type="text" class="comment-input" id="ci-${p.id}" placeholder="写下你的评论…（最多300字）" maxlength="300"><span class="comment-count" id="cc-${p.id}">0/300</span><button class="comment-send primary-btn" data-act="sendcomment" data-id="${p.id}">发送</button></div>
         <input type="file" accept="image/*" multiple class="hide cinput-file" data-id="${p.id}">
       </div>
     </div>
@@ -1900,10 +1904,10 @@ function bindDetail(){
   const body=$('detailBody');
   body.addEventListener('click',e=>{
     const lb=e.target.closest('[data-lightbox]');if(lb){openLightbox(lb.dataset.lightbox);return;}
+    const au=e.target.closest('[data-author]');if(au){openUserProfile(au.dataset.author);return;}
     const b=e.target.closest('[data-act]');if(!b)return;
     const act=b.dataset.act,id=b.dataset.id;
     if(act==='toggle-comments'){toggleDetailComments(id);return;}
-    const au=e.target.closest('[data-author]');if(au){openUserProfile(au.dataset.author);return;}
     switch(act){
       case 'like':toggleLike(id);break;
       case 'fav':toggleFav(id);break;
@@ -1922,6 +1926,11 @@ function bindDetail(){
       case 'reply':startReply(b.dataset.cid,b.dataset.uid);break;
       case 'cancelreply':cancelReply();break;
     }
+  });
+  // 评论字数计数器（最多300字）
+  body.addEventListener('input',e=>{
+    const inp=e.target.closest('.comment-input');if(!inp)return;
+    const c=document.getElementById('cc-'+inp.id.replace('ci-',''));if(c)c.textContent=inp.value.length+'/300';
   });
   body.addEventListener('change',e=>{
     const inp=e.target.closest('.cinput-file');if(!inp)return;
@@ -2021,6 +2030,7 @@ async function deleteComment(id){
 async function sendComment(id){
   const input=$('ci-'+id),content=input.value.trim(),imgs=pendingCommentImages[id]||[],anonymous=!!document.querySelector(`.comment-anon[data-id="${id}"]`)?.checked;
   if(!content){toast('请输入评论文字');return}
+  if(content.length>300){toast('评论最多 300 字，请精简一下');return}
   const btn=document.querySelector(`[data-act="sendcomment"][data-id="${id}"]`);if(btn){btn.disabled=true;btn.textContent='发送中…'}
   const payload={post_id:id,author_id:currentUser?.id,content:content||'',images:imgs,anonymous};
   if(pendingReply&&pendingReply.postId===id&&pendingReply.commentId)payload.reply_to=pendingReply.commentId;
@@ -2315,6 +2325,7 @@ async function sendDM(){
   if(!activeConvId)return;
   const input=$('dmInput'),text=input.value.trim(),imgs=pendingDMImages||[];
   if(!text&&!imgs.length)return;
+  if(text.length>500){toast('私信最多 500 字，请精简一下');return}
   const btn=$('dmSend');btn.disabled=true;btn.textContent='发送中…';
   try{
     // 首次私信需先确保会话存在
@@ -2380,22 +2391,24 @@ function subscribeRealtime(){
 }
 // ---- 轻量轮询兜底 + 切回前台自动刷新：即使 Realtime 连接偶发掉线，也不用手动刷新整个论坛 ----
 let softSyncTimer=null,softSyncRunning=false;
-async function softSyncTick(){
+function rtConnected(){try{return client.getChannels().some(c=>c.state==='joined')}catch(e){return false}}
+async function softSyncTick(full=false){
   if(softSyncRunning)return;softSyncRunning=true;
   try{
     // 通知：拉一次即可同时刷新铃铛角标、未读数与（开着的）通知面板
     loadNotifications().catch(()=>{});
-    // 帖子：只看最新一条的 id，和本地顶部不一致才刷新信息流（极轻量；实时正常工作时基本空跑）
-    if(!searchText){
-      try{
-        const {data,error}=await client.from('posts').select('id').order('created_at',{ascending:false}).limit(1);
-        if(!error&&data&&data[0]&&data[0].id!==posts[0]?.id){
-          // 只在首页信息流、且没在看他人主页/帖子详情时自动刷新，避免打扰其他视图
-          if(activePage==='home'&&$('userHome').classList.contains('hide')&&$('postDetail').classList.contains('hide')){
-            refreshPosts(true).catch(()=>{});
-          }
-        }
-      }catch(e){}
+    // 帖子：只在首页信息流、且没在看他人主页/帖子详情时处理，避免打扰其他视图
+    if(!searchText&&activePage==='home'&&$('userHome').classList.contains('hide')&&$('postDetail').classList.contains('hide')){
+      if(full){
+        // 切回前台且实时已断：全量刷新，兜住后台期间被删/被改/新发/浏览量变化
+        refreshPosts(true).catch(()=>{});
+      }else{
+        // 轻量：只看最新一条 id，和本地顶部不一致才刷新（实时正常工作时基本空跑）
+        try{
+          const {data,error}=await client.from('posts').select('id').order('created_at',{ascending:false}).limit(1);
+          if(!error&&data&&data[0]&&data[0].id!==posts[0]?.id)refreshPosts(true).catch(()=>{});
+        }catch(e){}
+      }
     }
     // 私信：开着私信面板时顺手刷新会话列表；开着某个聊天时刷新当前会话的新消息
     if(!$('dmPanel').classList.contains('hide')){
@@ -2406,10 +2419,10 @@ async function softSyncTick(){
 }
 function startSoftSync(){
   if(softSyncTimer)return;
-  // 从后台切回前台：立即同步一次，解决“切出去再回来要手动刷新才看到新内容”
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)softSyncTick()});
+  // 从后台切回前台：实时连接还正常就轻量同步；若已断（后台掉线）则全量刷新，补上被删/被改的帖子
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)softSyncTick(rtConnected()?false:true)});
   // 前台时的低频兜底轮询（标签页隐藏时自动暂停，省电省流量）
-  softSyncTimer=setInterval(()=>{if(!document.hidden)softSyncTick()},15000);
+  softSyncTimer=setInterval(()=>{if(!document.hidden)softSyncTick(false)},15000);
 }
 // ---- 帖子数据实时同步：别人点赞/收藏/评论/浏览后，本地即时更新，无需刷新 ----
 const rtDirty={likes:new Set(),favs:new Set(),comments:new Set(),posts:new Set(),structural:new Set(),feedReload:false,detailComments:false,follows:false};
@@ -2506,6 +2519,8 @@ function rtSubscribePosts(){
       const old=posts[i];
       posts[i]={...old,...r};
       rtMark('posts',r.id);
+      // 内容/图片/分类/匿名 变化 → 重渲该卡片：别人改帖后，信息流预览即时更新（无需点进详情）
+      if(old.content!==r.content||(old.images||[]).join('|')!==(r.images||[]).join('|')||old.category!==r.category||!!old.anonymous!==!!r.anonymous)rtMark('structural',r.id);
       if(!!old.is_pinned!==!!r.is_pinned||!!old.is_hidden!==!!r.is_hidden){rtMark('structural',r.id);rtDirty.feedReload=true;}
     })
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'posts'},p=>{
