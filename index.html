@@ -665,7 +665,6 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
     <div class="profile-field"><label>真实姓名（选填，仅自己可见，除非下方开启公开）</label><input type="text" id="realNameInput" maxlength="20" placeholder="真实姓名"></div>
     <label class="profile-toggle"><input type="checkbox" id="realNamePublic"> 向他人公开我的真实姓名</label>
     <label class="profile-toggle"><input type="checkbox" id="showFollows" checked> 在个人主页展示我的关注 / 粉丝列表</label>
-    <div class="profile-field"><button class="secondary" id="pushBtn" style="width:100%">🔔 开启桌面消息通知</button><div class="status" id="pushStatus" style="margin-top:6px"></div></div>
     <div class="modal-actions"><button class="secondary" id="cancelUser">关闭</button><button class="primary-btn" style="margin:0;flex:1" id="saveUserBtn">保存</button></div>
   </div>
 </div>
@@ -864,7 +863,7 @@ function unlockScroll(){scrollLocks=Math.max(0,scrollLocks-1);if(!scrollLocks){d
 let myHistory=[],viewedSet=new Set(),detailOpen=false,detailPostId=null;
 let pendingPostImages=[],pendingCommentImages={};
 // 第二阶段：论坛管理（举报 / 置顶 / 隐藏 / 管理员后台）
-let reports=[],dmReports=[],adminPosts=[],hiddenPosts=[],adminTab='dashboard';
+let reports=[],dmReports=[],adminPosts=[],hiddenPosts=[],adminTab='dashboard',adminPostsLoaded=false;
 let editingPost=null,reportTarget=null;
 const REPORT_REASONS=[
   {v:'spam',l:'垃圾广告 / 微商引流'},
@@ -1028,6 +1027,8 @@ async function init(){
   }
   setBootStep('profile','done');
   setBootStep('posts','active');bootSay('正在加载帖子动态…');
+  // 缓存秒开：先用上次会话的帖子列表渲染，网络加载完成后自动覆盖
+  if(readPostsCache())renderPosts();
   await retryable(()=>loadPosts(true),'读取帖子',1,30000);
   setBootStep('posts','done');
   if(!eventsBound){bindEvents();eventsBound=true;}
@@ -1053,7 +1054,7 @@ async function init(){
   }
   updateUserUI();renderPosts();renderMyPage();
   loadMyData().then(()=>renderMyPage()).catch(()=>{});
-  loadFollows().catch(()=>{});loadNotifications().catch(()=>{});subscribeRealtime();initPush();
+  loadFollows().catch(()=>{});loadNotifications().catch(()=>{});subscribeRealtime();
 }
 
 async function createOrLoadProfile(){
@@ -1082,6 +1083,19 @@ async function loadPosts(reset=false){
   posts=reset?arr:posts.concat(arr);
   postsLoaded=posts.length;
   postsHasMore=(!searching)&&arr.length===PAGE_SIZE;
+  // 仅在默认「全部/非搜索」视图下写缓存，保证下次进入能秒开
+  if(!searching&&currentCategory==='all')writePostsCache();
+}
+// —— 帖子缓存：localStorage 存最近一屏，二次进入 0 网络秒出信息流 ——
+function readPostsCache(){
+  try{
+    const c=JSON.parse(localStorage.getItem('sm_posts_cache_v1')||'null');
+    if(Array.isArray(c)&&c.length){posts=c;postsLoaded=c.length;postsHasMore=true;return true;}
+  }catch(e){}
+  return false;
+}
+function writePostsCache(){
+  try{localStorage.setItem('sm_posts_cache_v1',JSON.stringify(posts.slice(0,60)))}catch(e){}
 }
 async function loadComments(){const {data,error}=await client.from('comments').select('*').order('created_at',{ascending:true});if(error){error.stage='读取 comments';throw error;}comments=data||[];}
 async function loadLikes(){const {data,error}=await client.from('post_likes').select('post_id,user_id,created_at');if(error){error.stage='读取 post_likes';throw error;}likes=data||[];}
@@ -1137,8 +1151,6 @@ function bindEvents(){
   $('dmReportCancel').onclick=()=>$('dmReportModal').classList.add('hide');
   $('dmReportSubmit').onclick=submitDMReport;
   $('dmReportReasons').addEventListener('click',e=>{const r=e.target.closest('.report-reason');if(r){document.querySelectorAll('#dmReportReasons .report-reason').forEach(x=>x.classList.remove('selected'));r.classList.add('selected');$('dmReportStatus').textContent='';$('dmReportStatus').className='status';}});
-  // 桌面通知：申请权限后订阅 push
-  $('pushBtn').onclick=async()=>{try{if(!('Notification' in window)){$('pushStatus').textContent='当前浏览器不支持桌面通知';return;}if(!('serviceWorker' in navigator)||!('PushManager' in window)){$('pushStatus').textContent='当前环境不支持推送（需 HTTPS）';return;}const p=await Notification.requestPermission();if(p!=='granted'){$('pushStatus').textContent='已拒绝，将无法接收桌面通知';return;}$('pushStatus').textContent='正在订阅…';initPush();$('pushStatus').textContent=VAPID_PUBLIC_KEY?'已开启桌面通知 ✓':'已记录，但需先配置 VAPID 公钥';}catch(e){$('pushStatus').textContent='开启失败：'+(e.message||e);}};
 }
 
 function openUser(){if(!currentProfile)return;$('nickInput').value=currentProfile.nickname||'';$('nickStatus').textContent='当前昵称：'+(currentProfile.nickname||'');document.querySelectorAll('.avatar-choice').forEach(b=>b.classList.toggle('selected',b.dataset.avatar===currentProfile.avatar));$('bioInput').value=currentProfile.bio||'';$('gradeInput').value=currentProfile.grade||'';$('classInput').value=currentProfile.class_name||'';$('realNameInput').value=currentProfile.real_name||'';$('realNamePublic').checked=!!currentProfile.real_name_public;$('showFollows').checked=currentProfile.show_follows!==false;$('userModal').classList.remove('hide');}
@@ -1255,10 +1267,12 @@ async function togglePinComment(cid){
   }catch(e){toast('操作失败：'+e.message)}
 }
 // —— 管理员后台 ——
-function openAdminBackend(){
+function openAdminBackend(tab){
   $('adminPanel').classList.remove('hide');
-  adminTab='dashboard';renderAdminBody();
-  loadAdminData().then(()=>renderAdminBody()).catch(()=>{});
+  if(tab)adminTab=tab;
+  renderAdminBody();                                  // 先用内存已有内容秒开
+  if(adminTab==='reports')refreshAdminReports().catch(()=>{});  // 举报：只拉 2 张表，最快
+  if(!adminPostsLoaded)loadAdminPosts().catch(()=>{});          // 帖子/隐藏：后台补，缓存一次不阻塞
 }
 function closeAdminPanel(){$('adminPanel').classList.add('hide')}
 function refreshAdmin(){if(!$('adminPanel').classList.contains('hide'))renderAdminBody()}
@@ -1278,6 +1292,20 @@ async function loadAdminData(){
   else hiddenPosts=adminPosts.filter(p=>p.is_hidden);
   if(dr.status==='fulfilled'&&!dr.value.error)dmReports=dr.value.data||[];
   else{console.warn('读取私信举报失败',dr.reason||dr.value?.error);dmReports=[]}
+  adminPostsLoaded=true;
+}
+// 仅拉帖子 / 隐藏帖子（后台管理用），缓存一次，避免每次开后台都等 4 路全量查询
+async function loadAdminPosts(){
+  const [ap,hp]=await Promise.allSettled([
+    client.from('posts').select('*').order('created_at',{ascending:false}).limit(300),
+    client.from('posts').select('*').eq('is_hidden',true).order('created_at',{ascending:false}).limit(300)
+  ]);
+  if(ap.status==='fulfilled'&&!ap.value.error)adminPosts=ap.value.data||[];
+  else{console.warn('读取后台帖子失败',ap.reason||ap.value?.error);adminPosts=[]}
+  if(hp.status==='fulfilled'&&!hp.value.error)hiddenPosts=hp.value.data||[];
+  else hiddenPosts=adminPosts.filter(p=>p.is_hidden);
+  adminPostsLoaded=true;
+  if(!$('adminPanel').classList.contains('hide')&&adminTab!=='reports')renderAdminBody();
 }
 function reportTargetPreview(r){
   if(r.target_type==='comment'){
@@ -1444,7 +1472,7 @@ async function adminDeletePost(id,reportId){
 }
 async function adminHidePost(id,reportId){
   const d=await setPostFlag(id,{is_hidden:true});
-  if(d){if(reportId)await dismissReport(reportId,true);if(!hiddenPosts.some(p=>p.id===id))hiddenPosts.unshift(d);invalidateStats();renderPosts();loadMyData().then(()=>renderMyPage()).catch(()=>{});loadAdminData().then(()=>renderAdminBody()).catch(()=>refreshAdmin());toast('已隐藏该帖')}
+  if(d){if(reportId)await dismissReport(reportId,true);if(!hiddenPosts.some(p=>p.id===id))hiddenPosts.unshift(d);invalidateStats();renderPosts();loadMyData().then(()=>renderMyPage()).catch(()=>{});loadAdminPosts().then(()=>refreshAdmin()).catch(()=>refreshAdmin());toast('已隐藏该帖')}
 }
 async function adminDeleteCommentReport(cid,reportId){
   if(!confirm('确定删除这条被举报的评论吗？'))return;
@@ -1486,7 +1514,7 @@ async function batchAction(kind){
     }
   }catch(e){toast('批量操作失败：'+e.message)}
   invalidateStats();renderPosts();renderMyPage();
-  loadAdminData().then(()=>renderAdminBody()).catch(()=>refreshAdmin());
+  loadAdminPosts().then(()=>refreshAdmin()).catch(()=>refreshAdmin());
 }
 
 const STORAGE_BUCKET='forum-images';
@@ -2045,7 +2073,7 @@ async function onNotifClick(el){
   // 举报类通知：管理员 → 跳后台举报管理；普通用户 → 仅关闭
   if(type==='report_admin'){
     closeNotifPanel();
-    if(isAdmin()){openAdminBackend();adminTab='reports';renderAdminBody();}
+    if(isAdmin()){openAdminBackend('reports');}
     else toast('已收到，管理员会尽快处理');
     return;
   }
@@ -2177,7 +2205,8 @@ function subscribeRealtime(){
   try{
     client.channel('notif-'+currentUser.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'recipient_id=eq.'+currentUser.id},(payload)=>{
       loadNotifications().catch(()=>{});
-      const n=payload.new;if(n&&n.type==='new_message'&&document.hidden)showBrowserNotify(n.title,n.body);
+      const n=payload.new;
+      if(n&&n.type==='report_admin'&&isAdmin())refreshAdminReports();
     }).subscribe();
     client.channel('dm-'+currentUser.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},(payload)=>{
       const m=payload.new;if(!m)return;
@@ -2185,6 +2214,7 @@ function subscribeRealtime(){
       loadConversations().catch(()=>{});
     }).subscribe();
     rtSubscribePosts();
+    rtSubscribeAdmin();   // 管理员：举报表实时刷新
   }catch(e){console.warn('Realtime 订阅失败',e)}
 }
 // ---- 帖子数据实时同步：别人点赞/收藏/评论/浏览后，本地即时更新，无需刷新 ----
@@ -2300,25 +2330,43 @@ function rtSubscribePosts(){
     .on('postgres_changes',{event:'*',schema:'public',table:'follows'},()=>{rtMark('follows');})
     .subscribe();
 }
-function showBrowserNotify(title,body){
-  try{if(!('Notification' in window))return;if(Notification.permission==='granted')new Notification('文庙论坛 · '+title,{body:body||'',icon:'data:image/png;base64,iVBORwKGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='})}catch(e){}
+// ---- 管理员举报实时刷新：别人提交/处理举报后，后台「举报管理」立即更新，无需手动重开 ----
+function rtSubscribeAdmin(){
+  const c=client;
+  // 新举报：先用事件 payload 即时插一行（体感 0 延迟），再后台全量对齐
+  const badge=()=>updateReportBadge(reports.filter(r=>r.status!=='handled').length+dmReports.filter(r=>r.status!=='handled').length);
+  const onPost=(payload)=>{
+    if(!isAdmin())return;
+    const n=payload&&payload.new;
+    if(payload&&payload.eventType==='INSERT'&&n&&n.id&&!reports.some(r=>r.id===n.id)){reports.push(n);badge();refreshAdmin();}
+    refreshAdminReports();
+  };
+  const onDM=(payload)=>{
+    if(!isAdmin())return;
+    const n=payload&&payload.new;
+    if(payload&&payload.eventType==='INSERT'&&n&&n.id&&!dmReports.some(r=>r.id===n.id)){dmReports.push(n);badge();refreshAdmin();}
+    refreshAdminReports();
+  };
+  c.channel('rt-post_reports')
+    .on('postgres_changes',{event:'*',schema:'public',table:'post_reports'},onPost)
+    .subscribe();
+  c.channel('rt-dm_reports')
+    .on('postgres_changes',{event:'*',schema:'public',table:'dm_reports'},onDM)
+    .subscribe();
 }
-// 桌面推送：部署到 GitHub Pages 前，请把下面替换为你的 VAPID 公钥（用 web-push 生成：npx web-push generate-vapid-keys）
-const VAPID_PUBLIC_KEY='';
-function initPush(){
-  try{
-    if(!('serviceWorker' in navigator)||!('PushManager' in window))return;
-    navigator.serviceWorker.register('sw.js').then(async reg=>{
-      const sub=await reg.pushManager.getSubscription();
-      if(sub){await savePushSub(sub);return;}
-      if(!('Notification' in window)||Notification.permission!=='granted')return;
-      const reg2=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:VAPID_PUBLIC_KEY});
-      await savePushSub(reg2);
-    }).catch(()=>{});
-  }catch(e){}
-}
-async function savePushSub(sub){
-  try{const j=sub.toJSON();const {error}=await client.from('push_subscriptions').upsert({user_id:currentUser.id,endpoint:j.endpoint,auth:j.keys.auth,p256dh:j.keys.p256dh},{onConflict:'user_id,endpoint'});if(error)throw error;}catch(e){console.warn('推送订阅保存失败',e);}
+async function refreshAdminReports(){
+  if(!isAdmin())return;
+  // 只拉举报两张表，最快；面板关着时也预热缓存，开面板即见最新
+  const [rp,dr]=await Promise.allSettled([
+    client.from('post_reports').select('*').order('created_at',{ascending:false}).limit(300),
+    client.from('dm_reports').select('*').order('created_at',{ascending:false}).limit(300)
+  ]);
+  if(rp.status==='fulfilled'&&!rp.value.error)reports=rp.value.data||[];
+  else reports=reports;
+  if(dr.status==='fulfilled'&&!dr.value.error)dmReports=dr.value.data||[];
+  const pending=reports.filter(r=>r.status!=='handled').length+dmReports.filter(r=>r.status!=='handled').length;
+  updateReportBadge(pending);
+  refreshAdmin();   // 仅当后台面板开着时重渲染
 }
 const splash=document.getElementById('v12Splash');
 const bootScreen=document.getElementById('bootScreen');
