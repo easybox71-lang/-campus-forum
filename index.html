@@ -1096,6 +1096,9 @@ async function init(){
   updateUserUI();renderPosts();renderMyPage();
   setBootStep('posts','active');bootSay(hadCache?'正在更新动态…':'正在加载帖子动态…');
   const results=await refreshP;
+  // results[0] 是帖子任务，其余是评论/点赞等社交数据；帖子完成立即打勾，避免进入时“加载帖子动态”还在转圈
+  const postsOk=!!(results[0]&&results[0].status==='fulfilled');
+  setBootStep('posts',postsOk?'done':'fail');
   const failed=results.filter(r=>r.status==='rejected');
   if(failed.length){
     setBootStep('social','fail');
