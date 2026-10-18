@@ -92,6 +92,19 @@ textarea::placeholder{color:#a8b2c1}
 .comment:last-of-type{border-bottom:0}.comment-avatar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#f1f5f9;flex-shrink:0}
 .comment-body{min-width:0;flex:1}.comment-head{display:flex;align-items:center;gap:6px}.comment-head strong{font-size:13px;color:var(--primary)}.comment-head span{font-size:11px;color:var(--muted)}
 .comment-del{margin-left:auto;border:0;background:none;color:var(--muted);font-size:11px;padding:3px 6px;border-radius:5px}.comment-del:hover{color:var(--danger);background:#fef2f2}
+.comment-actions{margin-left:auto;display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.comment-reply{border:1px solid var(--border);background:#fff;color:var(--primary);font-size:11px;font-weight:600;padding:3px 9px;border-radius:11px;flex-shrink:0}
+.comment-reply:hover{background:var(--primary-soft);border-color:var(--primary)}
+.comment-head .comment-actions .comment-del{margin-left:0}
+.reply-prefix{color:var(--muted);font-size:13px}
+.reply-prefix strong{color:var(--primary);font-weight:600}
+.reply-hint{display:flex;align-items:center;gap:7px;background:var(--primary-soft);border:1px solid var(--primary);border-radius:9px;padding:7px 11px;font-size:12px;color:var(--primary);margin-bottom:9px}
+.reply-hint b{font-weight:700}
+.reply-cancel{margin-left:auto;cursor:pointer;color:var(--sub);font-size:12px;text-decoration:underline}
+.reply-cancel:hover{color:var(--danger)}
+.my-subhead{font-size:13px;font-weight:800;color:var(--sub);margin:16px 0 10px;padding-left:8px;border-left:3px solid var(--primary)}
+.my-subhead:first-child{margin-top:2px}
+.my-subhead .cnt{color:var(--muted);font-weight:600;margin-left:4px}
 .comment-text{font-size:13px;color:var(--sub);margin-top:2px;word-break:break-word}
 .comment-img{margin-top:6px;max-width:190px;border-radius:9px;overflow:hidden;cursor:zoom-in;background:#edf2f8}.comment-img img{width:100%;height:auto;display:block;background:#edf2f8}
 .comment-preview{display:flex;gap:7px;margin:7px 0;flex-wrap:wrap}.comment-preview .preview{width:58px;height:58px}
@@ -1043,8 +1056,9 @@ async function init(){
   const hadCache=readSnapshot();
   if(!eventsBound){bindEvents();eventsBound=true;}
   if(hadCache){
+    // 有缓存：先把内容预渲染好（藏在加载界面后面），但仍走完整头的品牌加载动画，
+    // 加载完成后丝滑淡入——既不白屏等待，也保留进入论坛的开场加载体验。
     renderPosts();updateBell();
-    enterForumWithoutWaiting(); // 有缓存：直接进论坛，不阻塞用户
   }
   setBootStep('auth','active');bootSay(hadCache?'正在同步最新内容…':'正在验证登录身份…');
   let session=await retryable(getOrCreateSession,'匿名登录 / Session',1,30000);
@@ -1719,7 +1733,33 @@ function postHtml(p){
     </div>
   </article>`;
 }
-function commentHtml(c){const prof=profileFor(c.author_id),name=displayName(c.author_id,!!c.anonymous),av=prof?.avatar||'😀';const aAttr=c.anonymous?'':`data-author="${c.author_id}"`;return `<div class="comment"><div class="comment-avatar" ${aAttr}>${esc(av)}</div><div class="comment-body"><div class="comment-head"><strong ${aAttr}>${esc(name)}</strong>${c.is_admin?'<span class="admin-badge">管理员</span>':''}${c.is_pinned?'<span class="pin pin-top" style="font-size:11px">📌 置顶</span>':''}${timeHtml(c.created_at,'comment-time')}${c.author_id!==currentUser?.id?`<button class="comment-del" data-act="report" data-ctype="comment" data-cid="${c.id}">举报</button>`:''}${isAdmin()?`<button class="comment-del" data-act="${c.is_pinned?'unpincomment':'pincomment'}" data-cid="${c.id}">${c.is_pinned?'取消置顶':'📌 置顶'}</button>`:''}${canDeleteComment(c)?`<button class="comment-del" data-act="delcomment" data-cid="${c.id}">删除</button>`:''}</div><div class="comment-text">${esc(c.content)}</div>${(c.images||[]).map(s=>`<div class="comment-img" data-lightbox="${esc(s)}"><img src="${s}" alt="评论图片" loading="lazy" decoding="async"></div>`).join('')}</div></div>`}
+let pendingReply=null;
+function replyPrefix(c){
+  if(!c.reply_to)return '';
+  const parent=comments.find(x=>x.id===c.reply_to);
+  if(!parent)return '';
+  const paAttr=parent.anonymous?'':`data-author="${parent.author_id}"`;
+  return `<span class="reply-prefix">回复 <strong ${paAttr}>${esc(displayName(parent.author_id,!!parent.anonymous))}</strong>：</span>`;
+}
+function commentHtml(c){const prof=profileFor(c.author_id),name=displayName(c.author_id,!!c.anonymous),av=prof?.avatar||'😀';const aAttr=c.anonymous?'':`data-author="${c.author_id}"`;const rp=replyPrefix(c);const replyBtn=c.author_id!==currentUser?.id?`<button class="comment-reply" data-act="reply" data-cid="${c.id}" data-uid="${c.author_id}">回复</button>`:'';return `<div class="comment" data-cid="${c.id}"><div class="comment-avatar" ${aAttr}>${esc(av)}</div><div class="comment-body"><div class="comment-head"><strong ${aAttr}>${esc(name)}</strong>${c.is_admin?'<span class="admin-badge">管理员</span>':''}${c.is_pinned?'<span class="pin pin-top" style="font-size:11px">📌 置顶</span>':''}${timeHtml(c.created_at,'comment-time')}<span class="comment-actions">${replyBtn}${c.author_id!==currentUser?.id?`<button class="comment-del" data-act="report" data-ctype="comment" data-cid="${c.id}">举报</button>`:''}${isAdmin()?`<button class="comment-del" data-act="${c.is_pinned?'unpincomment':'pincomment'}" data-cid="${c.id}">${c.is_pinned?'取消置顶':'📌 置顶'}</button>`:''}${canDeleteComment(c)?`<button class="comment-del" data-act="delcomment" data-cid="${c.id}">删除</button>`:''}</span></div><div class="comment-text">${rp}${esc(c.content)}</div>${(c.images||[]).map(s=>`<div class="comment-img" data-lightbox="${esc(s)}"><img src="${s}" alt="评论图片" loading="lazy" decoding="async"></div>`).join('')}</div></div>`}
+function startReply(cid,uid){
+  const c=comments.find(x=>x.id===cid);if(!c||!detailOpen)return;
+  pendingReply={postId:detailPostId,commentId:cid,toUid:uid,toName:displayName(uid,!!c.anonymous)};
+  const hint=$('replyHint');if(hint){hint.style.display='flex';const nm=$('replyName');if(nm)nm.textContent='@'+pendingReply.toName;}
+  const input=$('ci-'+detailPostId);if(input){input.placeholder='回复 @'+pendingReply.toName+'：';input.focus();}
+}
+function cancelReply(){
+  pendingReply=null;
+  const hint=$('replyHint');if(hint)hint.style.display='none';
+  if(detailPostId){const input=$('ci-'+detailPostId);if(input)input.placeholder='写下你的评论…';}
+}
+function updateDetailToggleText(id){
+  const st=postStats(id);
+  document.querySelectorAll(`[data-act="toggle-comments"][data-id="${id}"]`).forEach(b=>{
+    const expanded=detailOpen&&detailPostId===id&&$('detailComments')&&$('detailComments').style.display==='block';
+    b.textContent='💬 '+(expanded?'收起评论':'查看评论 '+st.comments);
+  });
+}
 
 // 事件委托：feed 内的所有点击/选择事件只在容器上绑定一次，避免每次重建信息流后重绑几百个监听器
 let feedDelegated=false;
@@ -1768,6 +1808,7 @@ function onFeedClick(e){
 // ===== 帖子详情页（覆盖层） =====
 function openPostDetail(id){
   const p=getPost(id);if(!p)return;
+  pendingReply=null;
   if(!$('userHome').classList.contains('hide'))closeUserProfile();
   detailOpen=true;detailPostId=id;
   renderDetail(p);
@@ -1804,6 +1845,7 @@ function renderDetail(p){
       <div class="detail-comment-list" id="detailComments" style="display:none"></div>
       <div class="detail-comment-box" id="detailCommentBox" style="display:none">
         <label class="anon" style="display:inline-flex;margin:0 0 8px"><input type="checkbox" class="comment-anon" data-id="${p.id}"> 匿名评论</label>
+        <div class="reply-hint" id="replyHint" style="display:none">↩️ 正在回复 <b id="replyName"></b> <span class="reply-cancel" data-act="cancelreply">✕ 取消</span></div>
         <div class="preview-list" id="detailPreview"></div>
         <div class="comment-input-row"><button class="comment-photo" data-act="photo" data-id="${p.id}">📷</button><input type="text" class="comment-input" id="ci-${p.id}" placeholder="写下你的评论…" maxlength="1000"><button class="comment-send primary-btn" data-act="sendcomment" data-id="${p.id}">发送</button></div>
         <input type="file" accept="image/*" multiple class="hide cinput-file" data-id="${p.id}">
@@ -1816,8 +1858,7 @@ function toggleDetailComments(id){
   const show=list.style.display==='none';
   list.style.display=show?'block':'none';
   box.style.display=show?'block':'none';
-  const t=document.querySelector('[data-act="toggle-comments"][data-id="'+id+'"]');
-  if(t)t.textContent='💬 '+(show?'收起评论':'查看评论 '+postStats(id).comments);
+  updateDetailToggleText(id);
   if(show)renderDetailComments(id,true);
 }
 async function renderDetailComments(id,expand){
@@ -1875,6 +1916,8 @@ function bindDetail(){
       case 'restore':restorePost(id);break;
       case 'pincomment':togglePinComment(b.dataset.cid);break;
       case 'unpincomment':togglePinComment(b.dataset.cid);break;
+      case 'reply':startReply(b.dataset.cid,b.dataset.uid);break;
+      case 'cancelreply':cancelReply();break;
     }
   });
   body.addEventListener('change',e=>{
@@ -1976,12 +2019,15 @@ async function sendComment(id){
   const input=$('ci-'+id),content=input.value.trim(),imgs=pendingCommentImages[id]||[],anonymous=!!document.querySelector(`.comment-anon[data-id="${id}"]`)?.checked;
   if(!content){toast('请输入评论文字');return}
   const btn=document.querySelector(`[data-act="sendcomment"][data-id="${id}"]`);if(btn){btn.disabled=true;btn.textContent='发送中…'}
-  const {data,error}=await client.from('comments').insert({post_id:id,author_id:currentUser?.id,content:content||'',images:imgs,anonymous}).select('*').single();
+  const payload={post_id:id,author_id:currentUser?.id,content:content||'',images:imgs,anonymous};
+  if(pendingReply&&pendingReply.postId===id&&pendingReply.commentId)payload.reply_to=pendingReply.commentId;
+  const {data,error}=await client.from('comments').insert(payload).select('*').single();
   if(btn){btn.disabled=false;btn.textContent='发送'}
   if(error){toast('评论失败：'+error.message);return}
   input.value='';pendingCommentImages[id]=[];
   if(data)comments=[...comments,data];
-  rerenderPost(id);invalidateStats();if(detailOpen&&detailPostId===id){renderDetailComments(id,false);const t=document.querySelector('[data-act="toggle-comments"][data-id="'+id+'"]');if(t)t.textContent='💬 查看评论 '+postStats(id).comments;updateDetailStats(id);}if(activePage==='my')renderMyPage();toast('评论成功');
+  cancelReply();
+  rerenderPost(id);invalidateStats();if(detailOpen&&detailPostId===id){renderDetailComments(id,false);updateDetailToggleText(id);updateDetailStats(id);}if(activePage==='my')renderMyPage();toast('评论成功');
 }
 function openLightbox(src){$('lightboxImg').src=src;$('lightbox').classList.remove('hide')}
 // 单独拉取“我的”数据：分页后全局 posts 不完整，我的帖子/评论/点赞/收藏必须按需查询，不受信息流分页影响
@@ -2001,6 +2047,9 @@ async function loadMyData(){
     ]);
     myPosts=mpR.data||[];myComments=mcR.data||[];
     if(hpR){if(hpR.err){console.warn('读取隐藏帖子失败（请先在 Supabase 运行 management-setup.sql）',hpR.err);hiddenPosts=[]}else hiddenPosts=hpR.data||[]}
+    // 我回复过的父评论可能不在本地 comments 里（别人后来发的），补拉一次，保证“回复他人”能显示对方昵称和原评论
+    const rids=[...new Set(myComments.filter(c=>c.reply_to).map(c=>c.reply_to))].filter(id=>!comments.some(x=>x.id===id));
+    if(rids.length){try{const {data:pc}=await client.from('comments').select('*').in('id',rids);if(pc)comments=[...comments,...pc];}catch(e){}}
     // 父帖子（评论/点赞/收藏对应的帖子）：依赖上一步结果，单独并行
     const ids=[...new Set([...myComments.map(c=>c.post_id),...likes.filter(x=>x.user_id===currentUser?.id).map(x=>x.post_id),...favorites.filter(x=>x.user_id===currentUser?.id).map(x=>x.post_id)])];
     if(ids.length){const {data:pp}=await client.from('posts').select('*').in('id',ids);myParentPosts=Object.fromEntries((pp||[]).map(p=>[p.id,p]));}
@@ -2039,8 +2088,17 @@ function switchPage(page){
 function renderMyPage(animate=false){
   if(!currentUser)return;updateUserUI();const box=$('myContentList');
   if(myTab==='posts'){const a=myPosts;box.innerHTML=a.length?a.map(p=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><button class="action delete" data-myact="delete" data-id="${p.id}">🗑️ 删除</button></div><div class="post-content" style="margin-top:10px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div>${timeHtml(p.created_at)}</div>`).join(''):'<div class="empty"><span class="emoji">📝</span>你还没有发布过帖子哦</div>';
-  }else if(myTab==='comments'){const a=myComments;box.innerHTML=a.length?a.map(c=>`<div class="card" style="margin-bottom:12px"><div style="font-size:12px;color:var(--muted);margin-bottom:7px">回复帖子：${esc(myParentPosts[c.post_id]?.content||'[图片帖]')}</div><div style="background:#f8fafc;border-radius:9px;padding:10px;font-size:13px;color:var(--sub)">${esc(c.content)||'[图片评论]'}</div><div style="display:flex;align-items:center;margin-top:7px">${timeHtml(c.created_at)}<button class="action delete" style="margin-left:auto" data-myact="delcomment" data-id="${c.id}">🗑️ 删除</button></div></div>`).join(''):'<div class="empty"><span class="emoji">💬</span>你还没有发表过评论哦</div>';
-}else if(myTab==='hidden'){const a=hiddenPosts;box.innerHTML=a.length?a.map(p=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${isAdmin()?`<button class="mini" data-myact="restore" data-id="${p.id}">♻️ 恢复</button>`:''}</div><div class="post-content" style="margin-top:10px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><div style="display:flex;align-items:center;margin-top:6px"><span style="font-size:12px;color:var(--muted)">作者：${esc(displayName(p.author_id,p.anonymous))}</span>${timeHtml(p.created_at)}</div></div>`).join(''):'<div class="empty"><span class="emoji">🚫</span>没有隐藏的帖子</div>'
+  }else if(myTab==='comments'){
+    const replies=myComments.filter(c=>c.reply_to);
+    const tops=myComments.filter(c=>!c.reply_to);
+    if(!myComments.length){box.innerHTML='<div class="empty"><span class="emoji">💬</span>你还没有发表过评论哦</div>';}
+    else{
+      const topHtml=tops.length?tops.map(c=>`<div class="card" style="margin-bottom:12px"><div style="font-size:12px;color:var(--muted);margin-bottom:7px">评论帖子：${esc(myParentPosts[c.post_id]?.content||'[图片帖]')}</div><div style="background:#f8fafc;border-radius:9px;padding:10px;font-size:13px;color:var(--sub)">${esc(c.content)||'[图片评论]'}</div><div style="display:flex;align-items:center;margin-top:7px">${timeHtml(c.created_at)}<button class="action delete" style="margin-left:auto" data-myact="delcomment" data-id="${c.id}">🗑️ 删除</button></div></div>`).join(''):'<div class="empty" style="padding:20px"><span class="emoji" style="font-size:26px">💬</span>还没有直接评论过帖子</div>';
+      const replyItem=c=>{const parent=comments.find(x=>x.id===c.reply_to);const pa=parent?parent.author_id:null;const paAttr=parent&&!parent.anonymous?`data-author="${parent.author_id}"`:'';const pname=parent?displayName(parent.author_id,!!parent.anonymous):'某条评论';return `<div class="card" style="margin-bottom:12px"><div style="font-size:12px;color:var(--muted);margin-bottom:7px">回复 <b ${paAttr}>${esc(pname)}</b>：${esc(parent?parent.content:'[图片评论]')}</div><div style="background:#f8fafc;border-radius:9px;padding:10px;font-size:13px;color:var(--sub)">${esc(c.content)||'[图片评论]'}</div><div style="display:flex;align-items:center;margin-top:7px">${timeHtml(c.created_at)}<button class="action delete" style="margin-left:auto" data-myact="delcomment" data-id="${c.id}">🗑️ 删除</button></div></div>`};
+      const repliesHtml=replies.length?replies.map(replyItem).join(''):'<div class="empty" style="padding:20px"><span class="emoji" style="font-size:26px">↩️</span>还没有回复过别人</div>';
+      box.innerHTML=`<div class="my-subhead">💬 评论帖子 <span class="cnt">${tops.length}</span></div>${topHtml}<div class="my-subhead">↩️ 回复他人 <span class="cnt">${replies.length}</span></div>${repliesHtml}`;
+    }
+  }else if(myTab==='hidden'){const a=hiddenPosts;box.innerHTML=a.length?a.map(p=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${isAdmin()?`<button class="mini" data-myact="restore" data-id="${p.id}">♻️ 恢复</button>`:''}</div><div class="post-content" style="margin-top:10px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><div style="display:flex;align-items:center;margin-top:6px"><span style="font-size:12px;color:var(--muted)">作者：${esc(displayName(p.author_id,p.anonymous))}</span>${timeHtml(p.created_at)}</div></div>`).join(''):'<div class="empty"><span class="emoji">🚫</span>没有隐藏的帖子</div>'
   }else if(myTab==='history'){const a=myHistory;box.innerHTML=a.length?a.map(h=>{const p=h.posts;return p?`<div style="margin-bottom:14px"><div class="history-time">浏览于 ${timeHtml(h.created_at)}</div>${postHtml(p)}</div>`:''}).filter(Boolean).join(''):'<div class="empty"><span class="emoji">🕘</span>你还没有浏览过任何帖子</div>';}else if(myTab==='following'){const a=[...followingSet];box.innerHTML=a.length?a.map(uid=>userRowHtml(uid)).join(''):'<div class="empty"><span class="emoji">➕</span>你还没有关注任何人</div>';
   }else if(myTab==='followers'){const a=[...followerSet];box.innerHTML=a.length?a.map(uid=>userRowHtml(uid,true)).join(''):'<div class="empty"><span class="emoji">👥</span>还没有人关注你</div>';
   }else{const ids=(myTab==='likes'?likes:favorites).filter(x=>x.user_id===currentUser?.id).map(x=>x.post_id);const arr=ids.map(id=>myParentPosts[id]).filter(Boolean);box.innerHTML=arr.length?arr.map(p=>`<div class="card" style="margin-bottom:12px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><div class="post-content" style="margin-top:9px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><button class="action ${myTab==='likes'?'like-on':'fav-on'}" data-myact="${myTab==='likes'?'unlike':'unfav'}" data-id="${p.id}">${myTab==='likes'?'❤️ 取消点赞':'⭐ 取消收藏'}</button></div>`).join(''):`<div class="empty"><span class="emoji">${myTab==='likes'?'❤️':'⭐'}</span>${myTab==='likes'?'你还没有点赞过帖子哦':'你还没有收藏过帖子哦'}</div>`}
@@ -2137,13 +2195,16 @@ function userRowHtml(uid,followersView){
   return `<div class="follow-row" data-uid="${uid}"><div class="avatar" data-author="${uid}">${esc(p.avatar||'😀')}</div><div class="follow-info" data-author="${uid}"><div class="follow-name">${esc(p.nickname||'同学')}</div><div class="follow-sub">${[p.grade,p.class_name].filter(Boolean).join(' · ')||''}</div></div><button class="mini ${mutual?'':'primary'}" data-follow="${uid}">${label}</button></div>`;
 }
 // ---- 通知 ----
+let notifBusy=false;
 async function loadNotifications(){
+  if(notifBusy)return;// 防止实时事件与轮询并发重复拉取
+  notifBusy=true;
   try{
     const {data,error}=await client.from('notifications').select('*').order('created_at',{ascending:false}).limit(100);
     if(error)throw error;
     notifications=data||[];myUnread=notifications.filter(n=>!n.is_read).length;updateBell();
     if(!$('notifPanel').classList.contains('hide'))renderNotifications();
-  }catch(e){console.warn('读取通知失败',e)}
+  }catch(e){console.warn('读取通知失败',e)}finally{notifBusy=false}
 }
 function updateBell(){const b=$('bellBadge');if(!b)return;if(myUnread>0){b.textContent=myUnread>99?'99+':myUnread;b.classList.remove('hide');}else b.classList.add('hide');}
 function openNotifPanel(){renderNotifications();$('notifPanel').classList.remove('hide');lockScroll();loadNotifications().catch(()=>{});}
@@ -2311,7 +2372,41 @@ function subscribeRealtime(){
     }).subscribe();
     rtSubscribePosts();
     rtSubscribeAdmin();   // 管理员：举报表实时刷新
+    startSoftSync();      // 轻量轮询兜底 + 切回前台自动刷新（实时偶发掉线也不用手动刷新）
   }catch(e){console.warn('Realtime 订阅失败',e)}
+}
+// ---- 轻量轮询兜底 + 切回前台自动刷新：即使 Realtime 连接偶发掉线，也不用手动刷新整个论坛 ----
+let softSyncTimer=null,softSyncRunning=false;
+async function softSyncTick(){
+  if(softSyncRunning)return;softSyncRunning=true;
+  try{
+    // 通知：拉一次即可同时刷新铃铛角标、未读数与（开着的）通知面板
+    loadNotifications().catch(()=>{});
+    // 帖子：只看最新一条的 id，和本地顶部不一致才刷新信息流（极轻量；实时正常工作时基本空跑）
+    if(!searchText){
+      try{
+        const {data,error}=await client.from('posts').select('id').order('created_at',{ascending:false}).limit(1);
+        if(!error&&data&&data[0]&&data[0].id!==posts[0]?.id){
+          // 只在首页信息流、且没在看他人主页/帖子详情时自动刷新，避免打扰其他视图
+          if(activePage==='home'&&$('userHome').classList.contains('hide')&&$('postDetail').classList.contains('hide')){
+            refreshPosts(true).catch(()=>{});
+          }
+        }
+      }catch(e){}
+    }
+    // 私信：开着私信面板时顺手刷新会话列表；开着某个聊天时刷新当前会话的新消息
+    if(!$('dmPanel').classList.contains('hide')){
+      loadConversations().catch(()=>{});
+      if(activeConvId&&!$('dmChat').classList.contains('hide'))loadMessages(activeConvId).catch(()=>{});
+    }
+  }finally{softSyncRunning=false}
+}
+function startSoftSync(){
+  if(softSyncTimer)return;
+  // 从后台切回前台：立即同步一次，解决“切出去再回来要手动刷新才看到新内容”
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)softSyncTick()});
+  // 前台时的低频兜底轮询（标签页隐藏时自动暂停，省电省流量）
+  softSyncTimer=setInterval(()=>{if(!document.hidden)softSyncTick()},15000);
 }
 // ---- 帖子数据实时同步：别人点赞/收藏/评论/浏览后，本地即时更新，无需刷新 ----
 const rtDirty={likes:new Set(),favs:new Set(),comments:new Set(),posts:new Set(),structural:new Set(),feedReload:false,detailComments:false,follows:false};
