@@ -1,6 +1,147 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<script id="swEngine">
+/* 思茅一中校园论坛 · 敏感词检测引擎 v2.5.1
+   三类基础词库：辱骂脏话 / 色情低俗 / 暴恐危险
+   来源：konsheng/Sensitive-lexicon (MIT) + songruiecho/Chinese_Dirty_Words，按校园场景裁剪
+   策略：归一化 → Trie 最长匹配 → 白名单短语豁免 → 英文词边界 → 整词替换为 ***
+   注意：本引擎绝不改写输入框内容（避免光标跳动），只在写入前净化 + 轻提示。
+*/
+(function(){
+'use strict';
+var DATA = {"porn":"18禁|99bb|a4u|a4y|adult|amateur|anal|a片|cao你|gay片|g点|g片|hardcore|h动漫|h动画|incest|morphine|narcotic|porn|secom|sexinsex|sm|sm女王|tokyohot|xiao77|xing伴侣|yin荡|一ye情|一丝不挂|一夜情|一夜欢|一本道|三级片|下体|不穿|丝袜|丝诱|中年美妇|乖乖粉|买春|乱交|乱伦|乱伦小|乱伦类|乱奸|乳交|乳头|乳房|乳沟|乳爆|亚情|人兽|人妻|人渣|仓井空|伦理大|伦理毛|伦理片|体位|体奸|作爱|你他妈|你吗b|你妈的|你麻痹|做爱|偷拍|偷欢|全家不得好死|全家死光|全家死绝|全裸|兽交|兽奸|兽性|兽欲|内射|内裤|写真|凌辱|几吧|别他吗|刹笔|刺激|前凸后翘|包二奶|卧艹|厕奴|原味内衣|双臀|发情|发浪|发生关系|口交|口射|口活|口淫|口爆|叫床|吃精|后庭|后穴|吸精|呻吟|和弦|咪咪|品香堂|喷精|国产av|处男|夏川纯|多人轮|夜勤病栋|大sb|大乳|大力抽送|大波|失身粉|奈美|套弄|女优|奶子|奸情|好嫩|妈了个逼|妈逼|妓女|妹上门|妹按摩|娘西皮|婊子养的|媚外|嫩女|嫩穴|嫩逼|寂寞女|寂寞男|密穴|封面女郎|射爽|射精|射颜|小xue|小穴|小逼|少修正|少妇|少年阿宾|就去日|屁眼|屁股|巨乳|巨奶|巨屌|干你|干你妈|干你娘|干死|干死你|干穴|幼交|幼女|幼男|应召|开苞|张筱雨|强jian|强奸|强奸处女|强暴|快感|性交|性交图片|性交视频|性伙伴|性伴侣|性奴|性奴集中营|性息|性感妖娆|性感少|性感诱惑|性技巧|性欲|性爱|性福情|性虎|性虐|性饥渴|情色|情趣用品|惹火身材|成人dv|成人卡通|成人图|成人小|成人文|成人文学|成人片|成人电|成人网站|成人聊|成人色情|成人视|我就色|我干|我操|我日你|我草|手淫|扌由插|抓胸|抽一插|抽插|拔出来|招妓|招鸡|拳交|按摩|按摩棒|捏弄|换妻俱乐部|推油|揉乳|插b|插你|插我|插暴|插比|插进|插逼|插阴|援交|援助交际|摇头丸|摸奶|摸胸|操他妈|操你全家|操你大爷|操你妈|操你娘|操你祖宗|操我|操死|操烂|操逼|操黑|擦你妈|放尿|文做|无修正|无码|日你妈|日烂|日逼|春药|暴乳|暴奸|暴干|暴淫|杀b|杨思敏|松岛枫|校鸡|欠干|欲仙欲死|欲女|欲火|死逼|母奸|汤加丽|流淫|浑圆|浪叫|浪女|浪妇|浪逼|淫书|淫乱|淫亵|淫兽|淫兽学|淫兽学园|淫叫|淫声浪语|淫女|淫妇|淫妻|淫威|淫娃|淫媚|淫情|淫情女|淫教师|淫术炼金士|淫样|淫母|淫水|淫河|淫浪|淫液|淫照|淫穴|淫糜|淫肉|淫色|淫荡|淫荡照片|淫荡美女|淫荡自慰器|淫荡视频|淫虐|淫虫|淫贱|淫靡|淫騷妹|淫魔|淫魔舞|漏乳|潮吹|潮喷|激情|火辣|炮友|煞逼|熟女|熟妇|熟母|爆乳|爆你菊|爆草|爱女人|爱液|爽死我了|爽片|狂插|狂操|狗娘养|狗操|狗日的|狗杂种|狗草|狼友|猛男|玉乳|玉女心经|玉穴|玉蒲团|男公关|男奴|白嫩|盗撮|相奸|真他妈|砲友|秘唇|穴口|穴图|粉嫩|粉穴|精子|精液|精神药品|美乳|美女上门|美女写真|美女裸体|美少妇|美幼|美穴|美腿|美艳少妇|美逼|群交|聊性|肉具|肉唇|肉棍|肉棒|肉欲|肉洞|肉穴|肉缝|肉茎|肉逼|肏你|肏死|肛交|肛门|肥逼|胸推|脚交|脱光|脱内裤|自慰|自拍|舔脚|舔阴|舞女|色b|色区|色妹妹|色情图片|色情影片|色情片|色情网站|色情表演|色欲|色猫|色界|色盟|色色|色视频|色诱|色逼|艹你|花花公子|草你丫|草你吗|荡女|菊穴|菊花洞|菊门|虎骑|蜜液|蜜穴|被干|被插|被操|装b|裙中性运动|裤袜|裸体写真|裸照|裸聊|裸聊网|裸舞视|裸陪|裸露|裹本|要射了|诱奸|调教|谜奸药|豪乳|贱b|贱比|赤裸|轮奸|轮操|轮暴|迷奸|迷奸粉|迷奸药|迷幻药|迷幻藥|迷情水|迷情粉|迷情药|迷昏口|迷昏药|迷昏藥|迷药|迷藥|迷魂药|迷魂藥|迷魂香|逼奸|酥痒|释欲|金鳞岂是池中物|金麟岂是池中物|铃声|铃木麻|阉割|阳具|阴b|阴唇|阴户|阴核|阴毛|阴精|阴茎|阴茎助勃|阴茎增大|阴蒂|阴道|阴部|阴间来电|阴阜|限量|陰唇|陰戶|陰道|集体淫|露b|颜射|风月大陆|风骚|食精|马勒|骚嘴|骚女|骚妇|骚比|骚水|骚浪|骚穴|高潮|鸡吧|鸡奸|鸡巴|麻痹的|麻醉药|黄片|龟头","abuse":"24k纯装逼|2b|asshole|bastard|bitch|cnm|crap|cunt|damn|dick|douche|dumb|faggot|fuck|fuckyou|fw|gc|idiot|jerk|lj|loser|mdzz|moron|nigga|nmd|nmsl|nnd|prick|pussy|retard|sb|sb行为|shit|sjb|slut|stupid|suck|tm|tmd|wanker|wc|wdnmd|whore|zz|下贱|不要脸|丑书|丑八怪|丑化女性|丑化敏感词关键词：|丑女|丑闻|丑陋的男人|乡巴佬|人格低贱|低贱|傻b|傻叉|傻吊|傻子|傻比|傻男人|傻缺|傻逼|傻逼河南人|刻板印象垃圾|卑贱韩国男人|卧槽|印度贱民|去死|双非穷丑女孩|受压迫随地乱丢垃圾|呆子|哑巴|四个小杂种|国女丑|土包子|圣母婊|地域歧视鲁能滚蛋|垃圾|垃圾人|垃圾城市|垃圾女人|垃圾女枪事件|垃圾广告|垃圾政客|垃圾民族|垃圾男人|垃圾男人犹太人|垃圾男人黑人|垃圾话|女权婊|女的婊|妈的|婊子|尼玛|屌丝|屌丝男|屌状|屌癌|广东人丑|废物|弱智|心机婊|性骚扰|恶心小屌丝|恶毒|愚蠢|我擦|找死|放屁|无耻|智障|杂种|极丑陋的恶习|死全家|死肥宅|死胖子|残废|沙比|沙雕|河南杂种|泥马|洋垃圾|混蛋|滚粗|滚蛋|煞笔|特么|特喵|犯贱|狗东西|狗屎|狗腿子|王八蛋|男性都是垃圾|畜生|疯子|瘸子|白痴|神经病|穷丑的男人|穷逼|穷鬼|窝囊废|笨蛋|绿茶婊|脑残|脑残抗日神剧|臭逼|舔狗|草泥马|荡妇|蠢猪|蠢货|行骚扰|装逼|贱人|贱族|贱民|贱货|贱货地域黑|贱骨头|踏马|闭嘴|骚干|骚扰|骚扰女性|骚扰者|骚货|骚逼|鬼畜|黑垃圾|黑逼|龟儿子","terror":"64式手枪出售|92式手枪出售|atom弹制造|c4塑胶炸药|c4炸药|c4炸药的成分|diy原子弹|diy核弹|tnt 炸弹的制作|tnt炸弹制作|tnt炸药成分|tnt炸药配方|zha药制造进程|三分钟教你原子弹|三利达弓弩专卖网|三利达弓弩军刀|三利达弓弩直营|三利达弓弩配件|三棱军刺专卖|三步倒弩箭专卖|三步倒捕狗药|三步倒药箭批发|三步倒麻醉弩箭销售|三步倒麻醉箭|三步倒麻醉箭专卖|三箭气枪出售|专业弓弩网|中国弓弩专卖网|中国弓弩狩猎网|中国弓弩直销|中国弓弩网|中国弓驽网|中国弩弓专卖|中国战神军用弓弩|中国户外刀具网|买卖54狗|买卖64狗|买卖军狗|买卖军用枪支|买卖警察枪支|亚砷酸钠|亚砷酸钾|亚砷（酸）酐|亚硝酸乙酯|人体炸弹制作流程|仙鹤气枪出售|仿品军刺出售|仿品军刺网|仿真枪qq|伪火|你怎么用土办法做武器|供应三利达弓弩麻醉箭|供应三步倒麻醉箭|供应军用弓弩专卖|供应军用弩折叠弩|供应军用手枪|供应弓弩|供应弓弩麻醉箭|供应弩捕狗箭|供应弩用麻醉箭|供应汽枪|供应秦氏弓弩|供应精品弓弩|供应钢珠弓弩|供应麻醉箭|供应麻醉箭三步倒|供应麻醉箭批发|全金属仿真枪专卖|写的炸弹制作教程|军刀专 卖|军刀专卖军刺|军刀专卖刀具批发|军刀价格军用刀具|军刀军刺甩棍|军刀军品网|军刀匕首直销网|军刀图片砍刀|军刀甩棍销售|军刀电棍销售|军刀直刀专卖|军刀直刀军品网|军刀直销网|军刀网|军刀网军刀专卖|军刺野营砍刀出售|军用54出售|军用77出售|军用刀具军品网|军用弓弩专卖店|军用弓弩专卖网|军用弓弩批发|军用手枪钢珠枪|冰毒|冷钢刀具专卖|冷钢刀具军品网|冷钢刀具直销网|出售54式手枪|出售:高仿真枪|出售m1911|出售三棱刀|出售仿真枪|出售军刀|出售军刺|出售军刺军刀|出售军品军刀|出售各类猎狗|出售国产军用54手枪|出售外国枪模|出售开山刀军刺|出售弹簧刀|出售手枪|出售手枪 qq|出售手枪=货到付款|出售手狗|出售步枪|出售气枪|出售气枪 qq|出售气狗|出售汽枪|出售炸药|出售炸药qq|出售狙击枪|出售猎枪|出售猎枪 qq|出售猎狗|出售美军现役军刀|出售袖珍手枪|出售跳刀|出售进口金属枪模|出售雷管|出售雷管炸药|刀具直销网|制作性能优良的燃烧弹|制作火药配方|制作炸弹首先要|制作硝化甘油|制作简易弓弩|刺刀专卖网|勃朗宁军刀|匕首蝴蝶甩刀专卖|北方先锋军刀|卖64手枪|卖92手枪|卖钢珠枪qq|南方军刀网|原子弹diy教程|原子弹制作|原子弹制作手册|原子弹制造完全手册|原子弹清单|原子弹配方|原装弹|可塑炸弹制作|司马仿真枪模型qq|各式气枪出售|各种炸药配方大全|各类军用枪|各类军用枪支|哪能买到真枪|哪里有卖双管猎|哪里有枪出售|哪里有气枪卖|哪里有真枪出售|哪里有真枪卖买|哪里有连发猎枪买卖|哪里有钢珠枪|哪里能买到自制手枪|售一元硬|售三棱|售五四|售假币|售健卫|售军用|售单管|售子弹|售左轮|售弹簧刀|售手枪|售手枪qq|售枪支|售枪购买手枪|售步枪|售氯胺|售火药|售热武|售狗子|售猎枪|售纯度|售虎头|售防身|售麻醉|土炸药成份|在家里做原子弹|基本配方是硝酸甘|塑胶炸弹|如何制硝化甘油|如何自制燃烧弹|娥眉气枪出售|子弹货到付款|小型弓弩专卖店|小猎人弓弩网|尼泊尔军刀出售|工字汽狗麻醉枪|工字牌气枪出售专卖|开山刀砍刀出售|弓弩一百专卖店|弓弩专卖|弓弩专卖店|弓弩专卖店网|弓弩专卖网|弓弩专卖网货到付款|弓弩专卖货到付款|弓弩专营|弓弩亲兄弟货到付款|弓弩免定金货到付款|弓弩制作|弓弩商城|弓弩商城专卖|弓弩图纸|弓弩批发|弓弩特许经销|弓弩狩猎网|弓弩直销|弓弩网|弓弩营销中心|弓弩销售|弓弩麻醉箭|弓弩麻醉镖|怎么用土办法做武器|怎么自制燃烧弹|恐怖分子自己制造炸弹|戈博军刀|战术军刀出售|户外军刀出售|户外军刀网|手工猎刀专卖|手工猎刀户外刀具|手把手教你做炸弹|手把手教你制作原子弹|手教你做原子弹|手教你制作原子弹|手枪式折叠三用弩|手枪气* 枪猎|手柄制作炸弹引爆器|手槍买卖自制手枪|打狗弓弩三步倒|折刀专卖网|折刀砍刀专卖|折刀砍刀军品网|提供气狗专卖店|教你制作原子弹|新型毒品|最新销售汽狗|有军用枪支出售|期出售手枪气枪猎|极端武力折刀|枪决女犯|枪出售|枪子弹|枪手|枪械制|枪模|枪的制|枪货到|枪销售|标准炸弹教程|核弹头的制造|正品军刺出售|气枪|气枪/出售/专卖网|气枪/猎枪/钢珠枪|气枪专卖网|气枪价格 仿真气枪|气枪价格，气枪专卖店|气枪仿真枪出售|气枪猎枪麻醉枪|气枪看货加qq|气枪联系qq|气枪迷魂药|气狗 高压气枪|气狗出售 进口气狗|水浴法制tnt|汽狗高压汽枪|汽车炸弹制作|液体炸药配方|淘宝气枪货到付款|火药制作简易炸弹|火药原理|火药的配方|火药配方|炸弹制作|炸弹制作从入门|炸弹制作从入门到精|炸弹制作入门|炸弹制作手册 硫酸|炸弹配方|炸药|炸药出售|炸药制造生产工艺|炸药的制作|炸药的制作配方|炸药的成分|炸药的配方|炸药硝酸甘油制法|炸药配方与制作|热武器qq|燃烧剂的简易制作|燃烧剂的简易制备|燃烧弹|燃烧弹 制作|燃烧弹制作|燃烧弹的制作方|燃烧瓶制作|爆破和杀伤燃烧弹|狩猎器材弓弩|狩猎器材弓弩专卖|狩猎弓弩专卖|狩猎弓弩专卖网|狩猎弓弩麻醉箭|猎枪专卖店|猎枪仿真枪qq|猎枪出售/枪|猎枪哪里有卖|猎枪子弹底火专卖|猎枪手枪买卖|猎枪销售手枪销售气枪|猎枪麻醉枪钢珠枪|用火药混合塑料|电击枪|直刀匕首直销网|真善忍|砍刀精品折刀专卖|硝酸甘油|硝酸甘油制作|硝酸甘油炸弹制作|硝酸甘油炸药制作|硝铵炸药配方|秃鹰气枪货到付款|简易原子弹教程|简易大威力炸弹|简易导弹制作|简易核弹头的制造|简易炸弹|简易炸药|简易燃烧弹|组装手枪|美国军刀出售|自制手弩|自制手枪哪里买|自制手枪哪里有卖|自制炸药配方|自制燃烧弹|自动跳刀专卖|莫洛托夫燃烧弹|著名精品折刀出售|西点军刀网|西点军品军刀网|警用刀具出售|购买枪支qq|购买自爆材料|赵氏弓弩专卖|赵氏弓弩专卖店|赵氏弓弩专卖网|赵氏弓弩销售|起爆器|转让 猎枪|轻型巡航导弹的制作|进口气枪,气枪子弹|追风弓弩麻醉箭专卖|郑州弓弩专卖|酸甘油炸药|里有汽枪出售|野营军刀出售|野营刀专卖|野营刀具专卖|野营刀具军品网|野营开山刀军刺|野营砍刀户外军刀|钢珠弓弩专卖店|钢珠弓弩专卖网|钢珠枪小口径步枪|铅弹 上海工字气枪|销售小口径步枪|销售气手狗|销售电手狗|销售运动步枪|锡峰气枪出售|长期出 售手枪|防卫刀具专卖|防卫刀具军品网|防卫刀具直销网|防卫棍刀出售|防卫棍刀户外刀具|防卫甩棍出售|防卫电棍出售|防卫著名军刀出售|防卫野营砍刀出售|防身手枪qq|防身武器手枪|阳江军品军刀网|阳江刀具专卖|阳江刀具军品网|阳江刀具批发网|阳江刀具直销网|阿兰得龙野营刀具网|阿兰德龙野营刀|集束炸弹制作|雷管出售|高压气枪,气枪子弹|高压气枪专卖店|高性能爆炸物质混合|高爆炸药基本配方|高爆炸药的基本配方|鸡尾酒炸弹制作|麻醉弓弩专卖店|麻醉枪出售可验货|麻醉枪猎枪军用|黑火药比例|黑火药的制作|黑火药的成分|黑火药的配方|黑火药配方|黑火药配方比例|黑索金的制造过程","white":"傻乎乎|傻乐|傻子|傻瓜相机|傻白甜|傻眼|傻笑|兼职信息|刀具|刀削面|刀工|刀法|卫生巾|卫生纸|卫生间|发骚|口味|口哨|口气|口水|口算|口红|口腔|口语|坏死|垃圾分类|垃圾桶|垃圾箱|垃圾袋|垃圾车|奶制品|奶牛|奶茶|子宫肌瘤|射击|射箭|射门|弱智儿童|弹幕|弹琴|弹簧|弹药库|弹跳|愚公|成人教育|成人礼|成人高考|拼死|智障人士|杀死|枪战游戏|枪手|死亡|死党|死心|死机|死板|死活|死角|死记|毒品检测|火药味|牛奶|牢骚|生物学|生理学|白痴测试|硬背|笨拙|笨鸟先飞|花草|草书|草原|草图|草地|草坪|草帽|草木|草根|草案|草率|草稿|草莓|草鞋|贱价|贱内|贱卖|贱民|风骚|香草|骚人|骚客"};
+var MASK = '***';
+var WORDS = [], WHITE = [], CATS = {};
+['porn','abuse','terror'].forEach(function(k){
+  var arr = (DATA[k]||'').split('|').filter(Boolean);
+  CATS[k] = arr.length;
+  arr.forEach(function(w){ WORDS.push(w); });
+});
+WHITE = (DATA.white||'').split('|').filter(Boolean);
+
+/* Trie：一次扫描，最长匹配优先 */
+var ROOT = Object.create(null), ASCII = Object.create(null);
+WORDS.forEach(function(w){
+  var n = ROOT;
+  for (var i=0;i<w.length;i++){
+    var c = w.charAt(i);
+    if (!n[c]) n[c] = Object.create(null);
+    n = n[c];
+  }
+  n.$ = 1;
+  if (/^[a-z0-9]+$/.test(w)) ASCII[w] = 1;
+});
+
+/* 归一化只保留「字母 / 数字 / 汉字 / 假名 / 韩文」，其余（空白、零宽、
+   中英文标点、emoji）全部视为可插入分隔符跳过，从而识别「傻 · 逼」这类写法。
+   全角 ASCII 先折叠成半角，英文统一小写。map 记录归一化字符对应的原文下标。 */
+var KEEP = /[0-9a-z\u4e00-\u9fff\u3400-\u4dbf\u3040-\u30ff\uac00-\ud7af]/i;
+function fold(c){
+  var k = c.charCodeAt(0);
+  if (k >= 0xFF01 && k <= 0xFF5E) return String.fromCharCode(k - 0xFEE0);
+  if (k === 0x3000) return ' ';
+  return c;
+}
+function normalize(s){
+  var n = '', m = [];
+  for (var i=0;i<s.length;i++){
+    var c = fold(s.charAt(i));
+    if (!KEEP.test(c)) continue;
+    c = c.toLowerCase();
+    n += c; m.push(i);
+  }
+  return {n:n, m:m};
+}
+function whiteRanges(low){
+  var out = [];
+  for (var k=0;k<WHITE.length;k++){
+    var p = WHITE[k], st = 0, idx;
+    while ((idx = low.indexOf(p, st)) !== -1){ out.push([idx, idx+p.length]); st = idx+1; }
+  }
+  return out;
+}
+function inWhite(a,b,rs){
+  for (var i=0;i<rs.length;i++) if (a >= rs[i][0] && b <= rs[i][1]) return true;
+  return false;
+}
+
+/* 返回 {text, hits}。hits 为命中处数，text 为替换后的文本（幂等：*** 不会被再命中）。 */
+function scan(s){
+  if (s === null || s === undefined) return {text:'', hits:0};
+  var orig = String(s);
+  if (!orig) return {text:orig, hits:0};
+  var o = normalize(orig), n = o.n, m = o.m;
+  if (!n) return {text:orig, hits:0};
+  var wr = whiteRanges(orig.toLowerCase()), hits = [];
+  for (var i=0;i<n.length;){
+    var node = ROOT, j = i, last = -1;
+    while (j < n.length){
+      var nx = node && node[n.charAt(j)];
+      if (!nx) break;
+      node = nx; j++;
+      if (node.$) last = j;
+    }
+    if (last > i){
+      var a = m[i], b = m[last-1]+1, w = n.slice(i,last), ok = true;
+      /* 纯英文/数字词条要求原文前后不是字母数字：防 assist→ass、class→ass、UUID 被改坏 */
+      if (ASCII[w]){
+        var prev = a > 0 ? orig.charAt(a-1) : '', next = orig.charAt(b) || '';
+        if (/[a-z0-9]/i.test(prev) || /[a-z0-9]/i.test(next)) ok = false;
+      }
+      if (ok && !inWhite(a, b, wr)){ hits.push([a,b]); i = last; continue; }
+    }
+    i++;
+  }
+  var out = orig;
+  for (var k=hits.length-1;k>=0;k--) out = out.slice(0,hits[k][0]) + MASK + out.slice(hits[k][1]);
+  return {text:out, hits:hits.length};
+}
+
+window.maskText = scan;
+window.clean = function(s){ return scan(s).text; };
+window.__swInfo = {total:WORDS.length, cats:CATS, white:WHITE.length, mask:MASK};
+
+/* 全部文本输入框统一的输入时轻提示（捕获阶段事件委托，覆盖动态生成的评论框）。
+   凭据框 / 搜索框明确排除：过滤密码会破坏登录，搜索框不入库。 */
+var EXCLUDE_ID = /^(credLoginUid|credLoginPwd|searchInput)$/;
+var tipEl = null, tipTimer = null;
+function ensureTip(){
+  if (tipEl) return tipEl;
+  tipEl = document.createElement('div');
+  tipEl.id = 'swTip';
+  tipEl.setAttribute('role','status');
+  tipEl.style.cssText = 'position:fixed;left:50%;bottom:26px;transform:translateX(-50%);'+
+    'z-index:2147483600;background:rgba(30,41,59,.94);color:#fff;font-size:13px;'+
+    'line-height:1.5;padding:10px 16px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.2);'+
+    'pointer-events:none;opacity:0;transition:opacity .25s;max-width:88vw;text-align:center';
+  (document.body || document.documentElement).appendChild(tipEl);
+  return tipEl;
+}
+function showTip(n){
+  var el = ensureTip();
+  el.textContent = '检测到 ' + n + ' 处不文明用语，发布后将显示为 ' + MASK;
+  el.style.opacity = '1';
+  if (tipTimer) clearTimeout(tipTimer);
+  tipTimer = setTimeout(function(){ el.style.opacity = '0'; }, 2600);
+}
+function hideTip(){
+  if (tipTimer) clearTimeout(tipTimer);
+  if (tipEl) tipEl.style.opacity = '0';
+}
+document.addEventListener('input', function(e){
+  var t = e.target;
+  if (!t || !t.tagName) return;
+  var tag = t.tagName.toLowerCase(), type = (t.type||'text').toLowerCase();
+  if (tag !== 'textarea' && !(tag === 'input' && type === 'text')) return;
+  if (EXCLUDE_ID.test(t.id||'')) return;
+  var r = scan(t.value||'');
+  if (r.hits > 0) showTip(r.hits); else hideTip();
+}, true);
+document.addEventListener('focusout', function(e){ hideTip(); }, true);
+})();
+
+</script>
 <script>
 !function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{("undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:this).pako=e()}}(function(){return function r(o,s,f){function l(t,e){if(!s[t]){if(!o[t]){var i="function"==typeof require&&require;if(!e&&i)return i(t,!0);if(d)return d(t,!0);var n=new Error("Cannot find module '"+t+"'");throw n.code="MODULE_NOT_FOUND",n}var a=s[t]={exports:{}};o[t][0].call(a.exports,function(e){return l(o[t][1][e]||e)},a,a.exports,r,o,s,f)}return s[t].exports}for(var d="function"==typeof require&&require,e=0;e<f.length;e++)l(f[e]);return l}({1:[function(e,t,i){"use strict";var n="undefined"!=typeof Uint8Array&&"undefined"!=typeof Uint16Array&&"undefined"!=typeof Int32Array;i.assign=function(e){for(var t,i,n=Array.prototype.slice.call(arguments,1);n.length;){var a=n.shift();if(a){if("object"!=typeof a)throw new TypeError(a+"must be non-object");for(var r in a)t=a,i=r,Object.prototype.hasOwnProperty.call(t,i)&&(e[r]=a[r])}}return e},i.shrinkBuf=function(e,t){return e.length===t?e:e.subarray?e.subarray(0,t):(e.length=t,e)};var a={arraySet:function(e,t,i,n,a){if(t.subarray&&e.subarray)e.set(t.subarray(i,i+n),a);else for(var r=0;r<n;r++)e[a+r]=t[i+r]},flattenChunks:function(e){var t,i,n,a,r,o;for(t=n=0,i=e.length;t<i;t++)n+=e[t].length;for(o=new Uint8Array(n),t=a=0,i=e.length;t<i;t++)r=e[t],o.set(r,a),a+=r.length;return o}},r={arraySet:function(e,t,i,n,a){for(var r=0;r<n;r++)e[a+r]=t[i+r]},flattenChunks:function(e){return[].concat.apply([],e)}};i.setTyped=function(e){e?(i.Buf8=Uint8Array,i.Buf16=Uint16Array,i.Buf32=Int32Array,i.assign(i,a)):(i.Buf8=Array,i.Buf16=Array,i.Buf32=Array,i.assign(i,r))},i.setTyped(n)},{}],2:[function(e,t,i){"use strict";var f=e("./common"),a=!0,r=!0;try{String.fromCharCode.apply(null,[0])}catch(e){a=!1}try{String.fromCharCode.apply(null,new Uint8Array(1))}catch(e){r=!1}for(var l=new f.Buf8(256),n=0;n<256;n++)l[n]=252<=n?6:248<=n?5:240<=n?4:224<=n?3:192<=n?2:1;function d(e,t){if(t<65534&&(e.subarray&&r||!e.subarray&&a))return String.fromCharCode.apply(null,f.shrinkBuf(e,t));for(var i="",n=0;n<t;n++)i+=String.fromCharCode(e[n]);return i}l[254]=l[254]=1,i.string2buf=function(e){var t,i,n,a,r,o=e.length,s=0;for(a=0;a<o;a++)55296==(64512&(i=e.charCodeAt(a)))&&a+1<o&&56320==(64512&(n=e.charCodeAt(a+1)))&&(i=65536+(i-55296<<10)+(n-56320),a++),s+=i<128?1:i<2048?2:i<65536?3:4;for(t=new f.Buf8(s),a=r=0;r<s;a++)55296==(64512&(i=e.charCodeAt(a)))&&a+1<o&&56320==(64512&(n=e.charCodeAt(a+1)))&&(i=65536+(i-55296<<10)+(n-56320),a++),i<128?t[r++]=i:(i<2048?t[r++]=192|i>>>6:(i<65536?t[r++]=224|i>>>12:(t[r++]=240|i>>>18,t[r++]=128|i>>>12&63),t[r++]=128|i>>>6&63),t[r++]=128|63&i);return t},i.buf2binstring=function(e){return d(e,e.length)},i.binstring2buf=function(e){for(var t=new f.Buf8(e.length),i=0,n=t.length;i<n;i++)t[i]=e.charCodeAt(i);return t},i.buf2string=function(e,t){var i,n,a,r,o=t||e.length,s=new Array(2*o);for(i=n=0;i<o;)if((a=e[i++])<128)s[n++]=a;else if(4<(r=l[a]))s[n++]=65533,i+=r-1;else{for(a&=2===r?31:3===r?15:7;1<r&&i<o;)a=a<<6|63&e[i++],r--;1<r?s[n++]=65533:a<65536?s[n++]=a:(a-=65536,s[n++]=55296|a>>10&1023,s[n++]=56320|1023&a)}return d(s,n)},i.utf8border=function(e,t){var i;for((t=t||e.length)>e.length&&(t=e.length),i=t-1;0<=i&&128==(192&e[i]);)i--;return i<0?t:0===i?t:i+l[e[i]]>t?i:t}},{"./common":1}],3:[function(e,t,i){"use strict";t.exports=function(e,t,i,n){for(var a=65535&e|0,r=e>>>16&65535|0,o=0;0!==i;){for(i-=o=2e3<i?2e3:i;r=r+(a=a+t[n++]|0)|0,--o;);a%=65521,r%=65521}return a|r<<16|0}},{}],4:[function(e,t,i){"use strict";t.exports={Z_NO_FLUSH:0,Z_PARTIAL_FLUSH:1,Z_SYNC_FLUSH:2,Z_FULL_FLUSH:3,Z_FINISH:4,Z_BLOCK:5,Z_TREES:6,Z_OK:0,Z_STREAM_END:1,Z_NEED_DICT:2,Z_ERRNO:-1,Z_STREAM_ERROR:-2,Z_DATA_ERROR:-3,Z_BUF_ERROR:-5,Z_NO_COMPRESSION:0,Z_BEST_SPEED:1,Z_BEST_COMPRESSION:9,Z_DEFAULT_COMPRESSION:-1,Z_FILTERED:1,Z_HUFFMAN_ONLY:2,Z_RLE:3,Z_FIXED:4,Z_DEFAULT_STRATEGY:0,Z_BINARY:0,Z_TEXT:1,Z_UNKNOWN:2,Z_DEFLATED:8}},{}],5:[function(e,t,i){"use strict";var s=function(){for(var e,t=[],i=0;i<256;i++){e=i;for(var n=0;n<8;n++)e=1&e?3988292384^e>>>1:e>>>1;t[i]=e}return t}();t.exports=function(e,t,i,n){var a=s,r=n+i;e^=-1;for(var o=n;o<r;o++)e=e>>>8^a[255&(e^t[o])];return-1^e}},{}],6:[function(e,t,i){"use strict";t.exports=function(){this.text=0,this.time=0,this.xflags=0,this.os=0,this.extra=null,this.extra_len=0,this.name="",this.comment="",this.hcrc=0,this.done=!1}},{}],7:[function(e,t,i){"use strict";t.exports=function(e,t){var i,n,a,r,o,s,f,l,d,c,u,h,b,m,w,k,_,g,v,p,x,y,S,E,Z;i=e.state,n=e.next_in,E=e.input,a=n+(e.avail_in-5),r=e.next_out,Z=e.output,o=r-(t-e.avail_out),s=r+(e.avail_out-257),f=i.dmax,l=i.wsize,d=i.whave,c=i.wnext,u=i.window,h=i.hold,b=i.bits,m=i.lencode,w=i.distcode,k=(1<<i.lenbits)-1,_=(1<<i.distbits)-1;e:do{b<15&&(h+=E[n++]<<b,b+=8,h+=E[n++]<<b,b+=8),g=m[h&k];t:for(;;){if(h>>>=v=g>>>24,b-=v,0===(v=g>>>16&255))Z[r++]=65535&g;else{if(!(16&v)){if(0==(64&v)){g=m[(65535&g)+(h&(1<<v)-1)];continue t}if(32&v){i.mode=12;break e}e.msg="invalid literal/length code",i.mode=30;break e}p=65535&g,(v&=15)&&(b<v&&(h+=E[n++]<<b,b+=8),p+=h&(1<<v)-1,h>>>=v,b-=v),b<15&&(h+=E[n++]<<b,b+=8,h+=E[n++]<<b,b+=8),g=w[h&_];i:for(;;){if(h>>>=v=g>>>24,b-=v,!(16&(v=g>>>16&255))){if(0==(64&v)){g=w[(65535&g)+(h&(1<<v)-1)];continue i}e.msg="invalid distance code",i.mode=30;break e}if(x=65535&g,b<(v&=15)&&(h+=E[n++]<<b,(b+=8)<v&&(h+=E[n++]<<b,b+=8)),f<(x+=h&(1<<v)-1)){e.msg="invalid distance too far back",i.mode=30;break e}if(h>>>=v,b-=v,(v=r-o)<x){if(d<(v=x-v)&&i.sane){e.msg="invalid distance too far back",i.mode=30;break e}if(S=u,(y=0)===c){if(y+=l-v,v<p){for(p-=v;Z[r++]=u[y++],--v;);y=r-x,S=Z}}else if(c<v){if(y+=l+c-v,(v-=c)<p){for(p-=v;Z[r++]=u[y++],--v;);if(y=0,c<p){for(p-=v=c;Z[r++]=u[y++],--v;);y=r-x,S=Z}}}else if(y+=c-v,v<p){for(p-=v;Z[r++]=u[y++],--v;);y=r-x,S=Z}for(;2<p;)Z[r++]=S[y++],Z[r++]=S[y++],Z[r++]=S[y++],p-=3;p&&(Z[r++]=S[y++],1<p&&(Z[r++]=S[y++]))}else{for(y=r-x;Z[r++]=Z[y++],Z[r++]=Z[y++],Z[r++]=Z[y++],2<(p-=3););p&&(Z[r++]=Z[y++],1<p&&(Z[r++]=Z[y++]))}break}}break}}while(n<a&&r<s);n-=p=b>>3,h&=(1<<(b-=p<<3))-1,e.next_in=n,e.next_out=r,e.avail_in=n<a?a-n+5:5-(n-a),e.avail_out=r<s?s-r+257:257-(r-s),i.hold=h,i.bits=b}},{}],8:[function(e,t,i){"use strict";var z=e("../utils/common"),R=e("./adler32"),N=e("./crc32"),O=e("./inffast"),C=e("./inftrees"),I=1,D=2,T=0,U=-2,F=1,n=852,a=592;function L(e){return(e>>>24&255)+(e>>>8&65280)+((65280&e)<<8)+((255&e)<<24)}function r(){this.mode=0,this.last=!1,this.wrap=0,this.havedict=!1,this.flags=0,this.dmax=0,this.check=0,this.total=0,this.head=null,this.wbits=0,this.wsize=0,this.whave=0,this.wnext=0,this.window=null,this.hold=0,this.bits=0,this.length=0,this.offset=0,this.extra=0,this.lencode=null,this.distcode=null,this.lenbits=0,this.distbits=0,this.ncode=0,this.nlen=0,this.ndist=0,this.have=0,this.next=null,this.lens=new z.Buf16(320),this.work=new z.Buf16(288),this.lendyn=null,this.distdyn=null,this.sane=0,this.back=0,this.was=0}function o(e){var t;return e&&e.state?(t=e.state,e.total_in=e.total_out=t.total=0,e.msg="",t.wrap&&(e.adler=1&t.wrap),t.mode=F,t.last=0,t.havedict=0,t.dmax=32768,t.head=null,t.hold=0,t.bits=0,t.lencode=t.lendyn=new z.Buf32(n),t.distcode=t.distdyn=new z.Buf32(a),t.sane=1,t.back=-1,T):U}function s(e){var t;return e&&e.state?((t=e.state).wsize=0,t.whave=0,t.wnext=0,o(e)):U}function f(e,t){var i,n;return e&&e.state?(n=e.state,t<0?(i=0,t=-t):(i=1+(t>>4),t<48&&(t&=15)),t&&(t<8||15<t)?U:(null!==n.window&&n.wbits!==t&&(n.window=null),n.wrap=i,n.wbits=t,s(e))):U}function l(e,t){var i,n;return e?(n=new r,(e.state=n).window=null,(i=f(e,t))!==T&&(e.state=null),i):U}var d,c,u=!0;function H(e){if(u){var t;for(d=new z.Buf32(512),c=new z.Buf32(32),t=0;t<144;)e.lens[t++]=8;for(;t<256;)e.lens[t++]=9;for(;t<280;)e.lens[t++]=7;for(;t<288;)e.lens[t++]=8;for(C(I,e.lens,0,288,d,0,e.work,{bits:9}),t=0;t<32;)e.lens[t++]=5;C(D,e.lens,0,32,c,0,e.work,{bits:5}),u=!1}e.lencode=d,e.lenbits=9,e.distcode=c,e.distbits=5}function j(e,t,i,n){var a,r=e.state;return null===r.window&&(r.wsize=1<<r.wbits,r.wnext=0,r.whave=0,r.window=new z.Buf8(r.wsize)),n>=r.wsize?(z.arraySet(r.window,t,i-r.wsize,r.wsize,0),r.wnext=0,r.whave=r.wsize):(n<(a=r.wsize-r.wnext)&&(a=n),z.arraySet(r.window,t,i-n,a,r.wnext),(n-=a)?(z.arraySet(r.window,t,i-n,n,0),r.wnext=n,r.whave=r.wsize):(r.wnext+=a,r.wnext===r.wsize&&(r.wnext=0),r.whave<r.wsize&&(r.whave+=a))),0}i.inflateReset=s,i.inflateReset2=f,i.inflateResetKeep=o,i.inflateInit=function(e){return l(e,15)},i.inflateInit2=l,i.inflate=function(e,t){var i,n,a,r,o,s,f,l,d,c,u,h,b,m,w,k,_,g,v,p,x,y,S,E,Z=0,B=new z.Buf8(4),A=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];if(!e||!e.state||!e.output||!e.input&&0!==e.avail_in)return U;12===(i=e.state).mode&&(i.mode=13),o=e.next_out,a=e.output,f=e.avail_out,r=e.next_in,n=e.input,s=e.avail_in,l=i.hold,d=i.bits,c=s,u=f,y=T;e:for(;;)switch(i.mode){case F:if(0===i.wrap){i.mode=13;break}for(;d<16;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}if(2&i.wrap&&35615===l){B[i.check=0]=255&l,B[1]=l>>>8&255,i.check=N(i.check,B,2,0),d=l=0,i.mode=2;break}if(i.flags=0,i.head&&(i.head.done=!1),!(1&i.wrap)||(((255&l)<<8)+(l>>8))%31){e.msg="incorrect header check",i.mode=30;break}if(8!=(15&l)){e.msg="unknown compression method",i.mode=30;break}if(d-=4,x=8+(15&(l>>>=4)),0===i.wbits)i.wbits=x;else if(x>i.wbits){e.msg="invalid window size",i.mode=30;break}i.dmax=1<<x,e.adler=i.check=1,i.mode=512&l?10:12,d=l=0;break;case 2:for(;d<16;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}if(i.flags=l,8!=(255&i.flags)){e.msg="unknown compression method",i.mode=30;break}if(57344&i.flags){e.msg="unknown header flags set",i.mode=30;break}i.head&&(i.head.text=l>>8&1),512&i.flags&&(B[0]=255&l,B[1]=l>>>8&255,i.check=N(i.check,B,2,0)),d=l=0,i.mode=3;case 3:for(;d<32;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}i.head&&(i.head.time=l),512&i.flags&&(B[0]=255&l,B[1]=l>>>8&255,B[2]=l>>>16&255,B[3]=l>>>24&255,i.check=N(i.check,B,4,0)),d=l=0,i.mode=4;case 4:for(;d<16;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}i.head&&(i.head.xflags=255&l,i.head.os=l>>8),512&i.flags&&(B[0]=255&l,B[1]=l>>>8&255,i.check=N(i.check,B,2,0)),d=l=0,i.mode=5;case 5:if(1024&i.flags){for(;d<16;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}i.length=l,i.head&&(i.head.extra_len=l),512&i.flags&&(B[0]=255&l,B[1]=l>>>8&255,i.check=N(i.check,B,2,0)),d=l=0}else i.head&&(i.head.extra=null);i.mode=6;case 6:if(1024&i.flags&&(s<(h=i.length)&&(h=s),h&&(i.head&&(x=i.head.extra_len-i.length,i.head.extra||(i.head.extra=new Array(i.head.extra_len)),z.arraySet(i.head.extra,n,r,h,x)),512&i.flags&&(i.check=N(i.check,n,h,r)),s-=h,r+=h,i.length-=h),i.length))break e;i.length=0,i.mode=7;case 7:if(2048&i.flags){if(0===s)break e;for(h=0;x=n[r+h++],i.head&&x&&i.length<65536&&(i.head.name+=String.fromCharCode(x)),x&&h<s;);if(512&i.flags&&(i.check=N(i.check,n,h,r)),s-=h,r+=h,x)break e}else i.head&&(i.head.name=null);i.length=0,i.mode=8;case 8:if(4096&i.flags){if(0===s)break e;for(h=0;x=n[r+h++],i.head&&x&&i.length<65536&&(i.head.comment+=String.fromCharCode(x)),x&&h<s;);if(512&i.flags&&(i.check=N(i.check,n,h,r)),s-=h,r+=h,x)break e}else i.head&&(i.head.comment=null);i.mode=9;case 9:if(512&i.flags){for(;d<16;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}if(l!==(65535&i.check)){e.msg="header crc mismatch",i.mode=30;break}d=l=0}i.head&&(i.head.hcrc=i.flags>>9&1,i.head.done=!0),e.adler=i.check=0,i.mode=12;break;case 10:for(;d<32;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}e.adler=i.check=L(l),d=l=0,i.mode=11;case 11:if(0===i.havedict)return e.next_out=o,e.avail_out=f,e.next_in=r,e.avail_in=s,i.hold=l,i.bits=d,2;e.adler=i.check=1,i.mode=12;case 12:if(5===t||6===t)break e;case 13:if(i.last){l>>>=7&d,d-=7&d,i.mode=27;break}for(;d<3;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}switch(i.last=1&l,d-=1,3&(l>>>=1)){case 0:i.mode=14;break;case 1:if(H(i),i.mode=20,6!==t)break;l>>>=2,d-=2;break e;case 2:i.mode=17;break;case 3:e.msg="invalid block type",i.mode=30}l>>>=2,d-=2;break;case 14:for(l>>>=7&d,d-=7&d;d<32;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}if((65535&l)!=(l>>>16^65535)){e.msg="invalid stored block lengths",i.mode=30;break}if(i.length=65535&l,d=l=0,i.mode=15,6===t)break e;case 15:i.mode=16;case 16:if(h=i.length){if(s<h&&(h=s),f<h&&(h=f),0===h)break e;z.arraySet(a,n,r,h,o),s-=h,r+=h,f-=h,o+=h,i.length-=h;break}i.mode=12;break;case 17:for(;d<14;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}if(i.nlen=257+(31&l),l>>>=5,d-=5,i.ndist=1+(31&l),l>>>=5,d-=5,i.ncode=4+(15&l),l>>>=4,d-=4,286<i.nlen||30<i.ndist){e.msg="too many length or distance symbols",i.mode=30;break}i.have=0,i.mode=18;case 18:for(;i.have<i.ncode;){for(;d<3;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}i.lens[A[i.have++]]=7&l,l>>>=3,d-=3}for(;i.have<19;)i.lens[A[i.have++]]=0;if(i.lencode=i.lendyn,i.lenbits=7,S={bits:i.lenbits},y=C(0,i.lens,0,19,i.lencode,0,i.work,S),i.lenbits=S.bits,y){e.msg="invalid code lengths set",i.mode=30;break}i.have=0,i.mode=19;case 19:for(;i.have<i.nlen+i.ndist;){for(;k=(Z=i.lencode[l&(1<<i.lenbits)-1])>>>16&255,_=65535&Z,!((w=Z>>>24)<=d);){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}if(_<16)l>>>=w,d-=w,i.lens[i.have++]=_;else{if(16===_){for(E=w+2;d<E;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}if(l>>>=w,d-=w,0===i.have){e.msg="invalid bit length repeat",i.mode=30;break}x=i.lens[i.have-1],h=3+(3&l),l>>>=2,d-=2}else if(17===_){for(E=w+3;d<E;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}d-=w,x=0,h=3+(7&(l>>>=w)),l>>>=3,d-=3}else{for(E=w+7;d<E;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}d-=w,x=0,h=11+(127&(l>>>=w)),l>>>=7,d-=7}if(i.have+h>i.nlen+i.ndist){e.msg="invalid bit length repeat",i.mode=30;break}for(;h--;)i.lens[i.have++]=x}}if(30===i.mode)break;if(0===i.lens[256]){e.msg="invalid code -- missing end-of-block",i.mode=30;break}if(i.lenbits=9,S={bits:i.lenbits},y=C(I,i.lens,0,i.nlen,i.lencode,0,i.work,S),i.lenbits=S.bits,y){e.msg="invalid literal/lengths set",i.mode=30;break}if(i.distbits=6,i.distcode=i.distdyn,S={bits:i.distbits},y=C(D,i.lens,i.nlen,i.ndist,i.distcode,0,i.work,S),i.distbits=S.bits,y){e.msg="invalid distances set",i.mode=30;break}if(i.mode=20,6===t)break e;case 20:i.mode=21;case 21:if(6<=s&&258<=f){e.next_out=o,e.avail_out=f,e.next_in=r,e.avail_in=s,i.hold=l,i.bits=d,O(e,u),o=e.next_out,a=e.output,f=e.avail_out,r=e.next_in,n=e.input,s=e.avail_in,l=i.hold,d=i.bits,12===i.mode&&(i.back=-1);break}for(i.back=0;k=(Z=i.lencode[l&(1<<i.lenbits)-1])>>>16&255,_=65535&Z,!((w=Z>>>24)<=d);){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}if(k&&0==(240&k)){for(g=w,v=k,p=_;k=(Z=i.lencode[p+((l&(1<<g+v)-1)>>g)])>>>16&255,_=65535&Z,!(g+(w=Z>>>24)<=d);){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}l>>>=g,d-=g,i.back+=g}if(l>>>=w,d-=w,i.back+=w,i.length=_,0===k){i.mode=26;break}if(32&k){i.back=-1,i.mode=12;break}if(64&k){e.msg="invalid literal/length code",i.mode=30;break}i.extra=15&k,i.mode=22;case 22:if(i.extra){for(E=i.extra;d<E;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}i.length+=l&(1<<i.extra)-1,l>>>=i.extra,d-=i.extra,i.back+=i.extra}i.was=i.length,i.mode=23;case 23:for(;k=(Z=i.distcode[l&(1<<i.distbits)-1])>>>16&255,_=65535&Z,!((w=Z>>>24)<=d);){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}if(0==(240&k)){for(g=w,v=k,p=_;k=(Z=i.distcode[p+((l&(1<<g+v)-1)>>g)])>>>16&255,_=65535&Z,!(g+(w=Z>>>24)<=d);){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}l>>>=g,d-=g,i.back+=g}if(l>>>=w,d-=w,i.back+=w,64&k){e.msg="invalid distance code",i.mode=30;break}i.offset=_,i.extra=15&k,i.mode=24;case 24:if(i.extra){for(E=i.extra;d<E;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}i.offset+=l&(1<<i.extra)-1,l>>>=i.extra,d-=i.extra,i.back+=i.extra}if(i.offset>i.dmax){e.msg="invalid distance too far back",i.mode=30;break}i.mode=25;case 25:if(0===f)break e;if(h=u-f,i.offset>h){if((h=i.offset-h)>i.whave&&i.sane){e.msg="invalid distance too far back",i.mode=30;break}h>i.wnext?(h-=i.wnext,b=i.wsize-h):b=i.wnext-h,h>i.length&&(h=i.length),m=i.window}else m=a,b=o-i.offset,h=i.length;for(f<h&&(h=f),f-=h,i.length-=h;a[o++]=m[b++],--h;);0===i.length&&(i.mode=21);break;case 26:if(0===f)break e;a[o++]=i.length,f--,i.mode=21;break;case 27:if(i.wrap){for(;d<32;){if(0===s)break e;s--,l|=n[r++]<<d,d+=8}if(u-=f,e.total_out+=u,i.total+=u,u&&(e.adler=i.check=i.flags?N(i.check,a,u,o-u):R(i.check,a,u,o-u)),u=f,(i.flags?l:L(l))!==i.check){e.msg="incorrect data check",i.mode=30;break}d=l=0}i.mode=28;case 28:if(i.wrap&&i.flags){for(;d<32;){if(0===s)break e;s--,l+=n[r++]<<d,d+=8}if(l!==(4294967295&i.total)){e.msg="incorrect length check",i.mode=30;break}d=l=0}i.mode=29;case 29:y=1;break e;case 30:y=-3;break e;case 31:return-4;case 32:default:return U}return e.next_out=o,e.avail_out=f,e.next_in=r,e.avail_in=s,i.hold=l,i.bits=d,(i.wsize||u!==e.avail_out&&i.mode<30&&(i.mode<27||4!==t))&&j(e,e.output,e.next_out,u-e.avail_out)?(i.mode=31,-4):(c-=e.avail_in,u-=e.avail_out,e.total_in+=c,e.total_out+=u,i.total+=u,i.wrap&&u&&(e.adler=i.check=i.flags?N(i.check,a,u,e.next_out-u):R(i.check,a,u,e.next_out-u)),e.data_type=i.bits+(i.last?64:0)+(12===i.mode?128:0)+(20===i.mode||15===i.mode?256:0),(0===c&&0===u||4===t)&&y===T&&(y=-5),y)},i.inflateEnd=function(e){if(!e||!e.state)return U;var t=e.state;return t.window&&(t.window=null),e.state=null,T},i.inflateGetHeader=function(e,t){var i;return e&&e.state?0==(2&(i=e.state).wrap)?U:((i.head=t).done=!1,T):U},i.inflateSetDictionary=function(e,t){var i,n=t.length;return e&&e.state?0!==(i=e.state).wrap&&11!==i.mode?U:11===i.mode&&R(1,t,n,0)!==i.check?-3:j(e,t,n,n)?(i.mode=31,-4):(i.havedict=1,T):U},i.inflateInfo="pako inflate (from Nodeca project)"},{"../utils/common":1,"./adler32":3,"./crc32":5,"./inffast":7,"./inftrees":9}],9:[function(e,t,i){"use strict";var I=e("../utils/common"),D=[3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258,0,0],T=[16,16,16,16,16,16,16,16,17,17,17,17,18,18,18,18,19,19,19,19,20,20,20,20,21,21,21,21,16,72,78],U=[1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577,0,0],F=[16,16,16,16,17,17,18,18,19,19,20,20,21,21,22,22,23,23,24,24,25,25,26,26,27,27,28,28,29,29,64,64];t.exports=function(e,t,i,n,a,r,o,s){var f,l,d,c,u,h,b,m,w,k=s.bits,_=0,g=0,v=0,p=0,x=0,y=0,S=0,E=0,Z=0,B=0,A=null,z=0,R=new I.Buf16(16),N=new I.Buf16(16),O=null,C=0;for(_=0;_<=15;_++)R[_]=0;for(g=0;g<n;g++)R[t[i+g]]++;for(x=k,p=15;1<=p&&0===R[p];p--);if(p<x&&(x=p),0===p)return a[r++]=20971520,a[r++]=20971520,s.bits=1,0;for(v=1;v<p&&0===R[v];v++);for(x<v&&(x=v),_=E=1;_<=15;_++)if(E<<=1,(E-=R[_])<0)return-1;if(0<E&&(0===e||1!==p))return-1;for(N[1]=0,_=1;_<15;_++)N[_+1]=N[_]+R[_];for(g=0;g<n;g++)0!==t[i+g]&&(o[N[t[i+g]]++]=g);if(0===e?(A=O=o,h=19):1===e?(A=D,z-=257,O=T,C-=257,h=256):(A=U,O=F,h=-1),_=v,u=r,S=g=B=0,d=-1,c=(Z=1<<(y=x))-1,1===e&&852<Z||2===e&&592<Z)return 1;for(;;){for(b=_-S,o[g]<h?(m=0,w=o[g]):o[g]>h?(m=O[C+o[g]],w=A[z+o[g]]):(m=96,w=0),f=1<<_-S,v=l=1<<y;a[u+(B>>S)+(l-=f)]=b<<24|m<<16|w|0,0!==l;);for(f=1<<_-1;B&f;)f>>=1;if(0!==f?(B&=f-1,B+=f):B=0,g++,0==--R[_]){if(_===p)break;_=t[i+o[g]]}if(x<_&&(B&c)!==d){for(0===S&&(S=x),u+=v,E=1<<(y=_-S);y+S<p&&!((E-=R[y+S])<=0);)y++,E<<=1;if(Z+=1<<y,1===e&&852<Z||2===e&&592<Z)return 1;a[d=B&c]=x<<24|y<<16|u-r|0}}return 0!==B&&(a[u+B]=_-S<<24|64<<16|0),s.bits=x,0}},{"../utils/common":1}],10:[function(e,t,i){"use strict";t.exports={2:"need dictionary",1:"stream end",0:"","-1":"file error","-2":"stream error","-3":"data error","-4":"insufficient memory","-5":"buffer error","-6":"incompatible version"}},{}],11:[function(e,t,i){"use strict";t.exports=function(){this.input=null,this.next_in=0,this.avail_in=0,this.total_in=0,this.output=null,this.next_out=0,this.avail_out=0,this.total_out=0,this.msg="",this.state=null,this.data_type=2,this.adler=0}},{}],"/lib/inflate.js":[function(e,t,i){"use strict";var c=e("./zlib/inflate"),u=e("./utils/common"),h=e("./utils/strings"),b=e("./zlib/constants"),n=e("./zlib/messages"),a=e("./zlib/zstream"),r=e("./zlib/gzheader"),m=Object.prototype.toString;function o(e){if(!(this instanceof o))return new o(e);this.options=u.assign({chunkSize:16384,windowBits:0,to:""},e||{});var t=this.options;t.raw&&0<=t.windowBits&&t.windowBits<16&&(t.windowBits=-t.windowBits,0===t.windowBits&&(t.windowBits=-15)),!(0<=t.windowBits&&t.windowBits<16)||e&&e.windowBits||(t.windowBits+=32),15<t.windowBits&&t.windowBits<48&&0==(15&t.windowBits)&&(t.windowBits|=15),this.err=0,this.msg="",this.ended=!1,this.chunks=[],this.strm=new a,this.strm.avail_out=0;var i=c.inflateInit2(this.strm,t.windowBits);if(i!==b.Z_OK)throw new Error(n[i]);if(this.header=new r,c.inflateGetHeader(this.strm,this.header),t.dictionary&&("string"==typeof t.dictionary?t.dictionary=h.string2buf(t.dictionary):"[object ArrayBuffer]"===m.call(t.dictionary)&&(t.dictionary=new Uint8Array(t.dictionary)),t.raw&&(i=c.inflateSetDictionary(this.strm,t.dictionary))!==b.Z_OK))throw new Error(n[i])}function s(e,t){var i=new o(t);if(i.push(e,!0),i.err)throw i.msg||n[i.err];return i.result}o.prototype.push=function(e,t){var i,n,a,r,o,s=this.strm,f=this.options.chunkSize,l=this.options.dictionary,d=!1;if(this.ended)return!1;n=t===~~t?t:!0===t?b.Z_FINISH:b.Z_NO_FLUSH,"string"==typeof e?s.input=h.binstring2buf(e):"[object ArrayBuffer]"===m.call(e)?s.input=new Uint8Array(e):s.input=e,s.next_in=0,s.avail_in=s.input.length;do{if(0===s.avail_out&&(s.output=new u.Buf8(f),s.next_out=0,s.avail_out=f),(i=c.inflate(s,b.Z_NO_FLUSH))===b.Z_NEED_DICT&&l&&(i=c.inflateSetDictionary(this.strm,l)),i===b.Z_BUF_ERROR&&!0===d&&(i=b.Z_OK,d=!1),i!==b.Z_STREAM_END&&i!==b.Z_OK)return this.onEnd(i),!(this.ended=!0);s.next_out&&(0!==s.avail_out&&i!==b.Z_STREAM_END&&(0!==s.avail_in||n!==b.Z_FINISH&&n!==b.Z_SYNC_FLUSH)||("string"===this.options.to?(a=h.utf8border(s.output,s.next_out),r=s.next_out-a,o=h.buf2string(s.output,a),s.next_out=r,s.avail_out=f-r,r&&u.arraySet(s.output,s.output,a,r,0),this.onData(o)):this.onData(u.shrinkBuf(s.output,s.next_out)))),0===s.avail_in&&0===s.avail_out&&(d=!0)}while((0<s.avail_in||0===s.avail_out)&&i!==b.Z_STREAM_END);return i===b.Z_STREAM_END&&(n=b.Z_FINISH),n===b.Z_FINISH?(i=c.inflateEnd(this.strm),this.onEnd(i),this.ended=!0,i===b.Z_OK):n!==b.Z_SYNC_FLUSH||(this.onEnd(b.Z_OK),!(s.avail_out=0))},o.prototype.onData=function(e){this.chunks.push(e)},o.prototype.onEnd=function(e){e===b.Z_OK&&("string"===this.options.to?this.result=this.chunks.join(""):this.result=u.flattenChunks(this.chunks)),this.chunks=[],this.err=e,this.msg=this.strm.msg},i.Inflate=o,i.inflate=s,i.inflateRaw=function(e,t){return(t=t||{}).raw=!0,s(e,t)},i.ungzip=s},{"./utils/common":1,"./utils/strings":2,"./zlib/constants":4,"./zlib/gzheader":6,"./zlib/inflate":8,"./zlib/messages":10,"./zlib/zstream":11}]},{},[])("/lib/inflate.js")});
 
@@ -93,7 +234,7 @@ setTimeout(window.__c3dAutoPrep,1500);
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#2563eb">
-<title>思茅一中校园论坛测试版 v2.5.0（互关判定修正 / 下滑白膜与滚动卡死根治 / 年级班级性别展示对齐 / 3D 校园单文件）</title>
+<title>思茅一中校园论坛测试版 v2.5.1（全输入框敏感词检测 / 辱骂·色情低俗·暴恐三类词库 / 3D 校园单文件）</title>
 <link rel="icon" type="image/png" href="data:image/png;base64,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">
 <style>
 :root{
@@ -946,7 +1087,7 @@ textarea{caret-color:var(--primary)}.toolbar .select,.search-input,.comment-inpu
     <h3>🏫 关于思茅一中校园论坛</h3>
     <div class="tip">本论坛为校园交流项目，与学校官方管理系统相互独立。</div>
     <p style="line-height:1.8;color:var(--sub);font-size:14px;margin:14px 0">云南省思茅第一中学创建于1915年，是一所公立完全中学，位于云南省普洱市思茅区。办学理念：<b>精诚治学、博文笃行</b>；校训：<b>千教万教教人求真，千学万学学做真人</b>。</p>
-    <div class="tip" style="margin-top:10px">当前版本 <b>v2.5.0</b>：修正互关误判、根治下滑白膜与滚动卡死、统一年级 / 班级 / 姓名 / 性别展示标签对齐，并修复匿名帖的资料标签泄露。</div>
+    <div class="tip" style="margin-top:10px">当前版本 <b>v2.5.1</b>：新增敏感词检测——发帖、评论、私信、昵称、简介、年级、班级、姓名、举报、通报、惩罚原因等全部文本输入框，命中脏话 / 淫秽 / 暴恐词一律替换为 ***；词库含辱骂、色情低俗、暴恐危险三类，支持白名单短语防误伤。</div>
     <div class="campus-card" id="campus3dEntry">
       <div class="ico">🏛</div>
       <div style="flex:1">
@@ -1334,7 +1475,7 @@ function renderMyPunishments(){
           <span class="punish-rec-scope ${p.scope==='all'?'all':'dm'}">${scopeLabel}</span>
         </div>
         <div class="punish-rec-body">
-          你在 <b>${startDay}</b> 因「<b>${esc(p.reason||'违反社区规定')}</b>」被举报（${PUNISH_SOURCE[p.source]||'社区举报'}），并经管理员核实处理。<br>
+          你在 <b>${startDay}</b> 因「<b>${esc(clean(p.reason||'违反社区规定'))}</b>」被举报（${PUNISH_SOURCE[p.source]||'社区举报'}），并经管理员核实处理。<br>
           惩罚结束日期为 <b>${endDay}</b>。
           <div class="punish-rec-feats">在此期间你将无法使用：${PUNISH_FEATS[p.scope]||PUNISH_FEATS.dm}</div>
         </div>
@@ -1347,7 +1488,7 @@ function renderMyPunishments(){
     html+=`<div class="my-subhead">⛔ 管理员操作记录 <span class="cnt">${myModerationHistory.length}</span></div>`;
     html+=myModerationHistory.map(m=>{
       const a=ACT[m.action]||['⚙️','操作'];
-      const snap=m.post_content?`<div class="mod-rec-snap">${esc((m.post_content||'').slice(0,120))}${(m.post_content||'').length>120?'…':''}</div>`:'';
+      const snap=m.post_content?`<div class="mod-rec-snap">${esc(clean((m.post_content||'').slice(0,120)))}${(m.post_content||'').length>120?'…':''}</div>`:'';
       return `<div class="mod-rec">
         <div class="mod-rec-head"><span class="mod-rec-action ${m.action}">${a[0]} 被管理员${a[1]}</span><span class="mod-rec-time">${timeHtml(m.created_at)}</span></div>
         <div class="mod-rec-body">管理员于 <b>${punishDay(m.created_at)}</b> 对你的帖子进行了「<b>${a[1]}</b>」操作。${m.post_category?`<span class="mod-rec-cat">分类：${esc(m.post_category)}</span>`:''}</div>
@@ -1706,7 +1847,7 @@ function noticeDefault(){return '文庙论坛是校园交流测试版。请友�
 let noticeRO=null;
 function renderNotice(){
   const box=$('noticeText');if(!box)return;
-  box.textContent=curNotice||noticeDefault();
+  box.textContent=clean(curNotice||noticeDefault());
   box.classList.remove('expanded');
   const eb=$('noticeEdit');if(eb)eb.classList.toggle('hide',!isAdmin());
   const measure=()=>{
@@ -1728,13 +1869,13 @@ let noticeWired=false;
 function wireNoticeUI(){
   if(noticeWired)return;noticeWired=true;
   const more=$('noticeMore'),edit=$('noticeEdit');
-  if(more)more.onclick=()=>{$('noticeFull').textContent=curNotice||noticeDefault();$('noticeModal').classList.remove('hide')};
+  if(more)more.onclick=()=>{$('noticeFull').textContent=clean(curNotice||noticeDefault());$('noticeModal').classList.remove('hide')};
   const nc=$('noticeClose');if(nc)nc.onclick=()=>$('noticeModal').classList.add('hide');
   if(edit)edit.onclick=()=>{$('noticeEditInput').value=curNotice||noticeDefault();$('noticeEditModal').classList.remove('hide')};
   const ec=$('noticeEditCancel');if(ec)ec.onclick=()=>$('noticeEditModal').classList.add('hide');
   const sv=$('noticeEditSave');
   if(sv)sv.onclick=async()=>{
-    const v=$('noticeEditInput').value.trim();
+    const v=clean($('noticeEditInput').value.trim());
     if(!v){toast('通报内容不能为空');return}
     sv.disabled=true;
     try{
@@ -2054,7 +2195,7 @@ function openUser(){
   // 相册头像：动态生成一个可选择的图片选项
   const avSel=$('avatarSelect');const old=avSel.querySelector('.avatar-choice.photo-choice');if(old)old.remove();
   if(/^data:image\//.test(curAvatar)){const b=document.createElement('button');b.type='button';b.className='avatar-choice photo-choice';b.dataset.avatar=curAvatar;b.innerHTML=`<img src="${curAvatar}" alt="">`;avSel.appendChild(b)}
-  $('nickInput').value=currentProfile.nickname||'';$('nickStatus').innerHTML='当前昵称：'+esc(currentProfile.nickname||'')+'<span class="nick-hint">最多 12 字</span>';document.querySelectorAll('.avatar-choice').forEach(b=>b.classList.toggle('selected',b.dataset.avatar===curAvatar));$('bioInput').value=currentProfile.bio||'';$('gradeInput').value=currentProfile.grade||'';$('classInput').value=currentProfile.class_name||'';$('realNameInput').value=currentProfile.real_name||'';$('realNamePublic').checked=!!currentProfile.real_name_public;$('showFollows').checked=currentProfile.show_follows!==false;
+  $('nickInput').value=currentProfile.nickname||'';$('nickStatus').innerHTML='当前昵称：'+esc(clean(currentProfile.nickname||''))+'<span class="nick-hint">最多 12 字</span>';document.querySelectorAll('.avatar-choice').forEach(b=>b.classList.toggle('selected',b.dataset.avatar===curAvatar));$('bioInput').value=currentProfile.bio||'';$('gradeInput').value=currentProfile.grade||'';$('classInput').value=currentProfile.class_name||'';$('realNameInput').value=currentProfile.real_name||'';$('realNamePublic').checked=!!currentProfile.real_name_public;$('showFollows').checked=currentProfile.show_follows!==false;
   // 性别：高亮当前选择；不设置=清除
   const g=currentProfile.gender||'';document.querySelectorAll('.gender-btn').forEach(b=>b.classList.toggle('selected',b.dataset.gender===g));$('genderPublic').checked=!!currentProfile.gender_public;
   document.querySelectorAll('.gender-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.gender-btn').forEach(x=>x.classList.remove('selected'));if(b.dataset.gender)document.querySelectorAll('.gender-btn').forEach(x=>{if(x.dataset.gender===b.dataset.gender)x.classList.add('selected')});});
@@ -2083,7 +2224,7 @@ async function saveProfile(){
   const selAv=document.querySelector('.avatar-choice.selected')?.dataset.avatar;
   const av=currentProfile.avatar;
   const a=selAv||(av&&(/^data:image\//.test(av)||!/^(https?:|data:|blob:)/.test(av))?av:'😀');
-  const patch={nickname:n,avatar:a,bio:$('bioInput').value.trim(),grade:$('gradeInput').value.trim(),class_name:$('classInput').value.trim(),real_name:$('realNameInput').value.trim(),real_name_public:$('realNamePublic').checked,show_follows:$('showFollows').checked,gender:document.querySelector('.gender-btn.selected')?.dataset.gender||'',gender_public:$('genderPublic').checked};
+  const patch={nickname:clean(n),avatar:a,bio:clean($('bioInput').value.trim()),grade:clean($('gradeInput').value.trim()),class_name:clean($('classInput').value.trim()),real_name:clean($('realNameInput').value.trim()),real_name_public:$('realNamePublic').checked,show_follows:$('showFollows').checked,gender:document.querySelector('.gender-btn.selected')?.dataset.gender||'',gender_public:$('genderPublic').checked};
   // 前端先查配额：本周已改够 5 次、且本次确实改了内容 → 不再发请求
   const changed=EDIT_FIELDS.some(k=>String(patch[k]??'')!==String(currentProfile?.[k]??''));
   const q=profileEditQuota();
@@ -2133,7 +2274,7 @@ function pickReason(btn){document.querySelectorAll('.report-reason').forEach(x=>
 async function submitReport(){
   const sel=document.querySelector('.report-reason.selected');
   if(!sel){$('reportStatus').textContent='⚠️ 请先选择举报原因';$('reportStatus').className='status err';return}
-  const label=sel.dataset.label||'',detail=$('reportDetail').value.trim();
+  const label=sel.dataset.label||'',detail=clean($('reportDetail').value.trim());
   const payload={target_type:reportTarget.type,target_id:reportTarget.id,reporter_id:currentUser?.id,reason:label,detail};
   // 乐观交互：先关弹窗提示成功，后台静默提交；失败再toast（避免等数据库 round-trip 的卡顿感）
   $('reportModal').classList.add('hide');toast('已提交举报，管理员会尽快处理');
@@ -2164,7 +2305,7 @@ async function addEditImages(files){
   renderEditPreview();
 }
 async function saveEditPost(){
-  const content=$('editContent').value.trim();
+  const content=clean($('editContent').value.trim());
   if(!content&&!editingPost.images.length){$('editStatus').textContent='⚠️ 内容和图片不能都为空';$('editStatus').className='status err';return}
   if(content.length>1000){$('editStatus').textContent='⚠️ 帖子最多 1000 字，请精简一下';$('editStatus').className='status err';return}
   $('saveEditBtn').disabled=true;const seOldTxt=$('saveEditBtn').textContent;$('saveEditBtn').textContent='保存中…';
@@ -2257,14 +2398,14 @@ async function loadAdminPosts(){
 function reportTargetPreview(r){
   if(r.target_type==='comment'){
     const c=comments.find(x=>x.id===r.target_id);
-    return c?(esc((c.content||'').slice(0,140))||'[图片评论]'):'[评论不存在或已删除]';
+    return c?(esc(clean((c.content||'').slice(0,140)))||'[图片评论]'):'[评论不存在或已删除]';
   }
   if(r.target_type==='user'){
     const p=profileFor(r.target_id);
-    return p?esc(p.nickname||'同学'):'[用户不存在]';
+    return p?esc(clean(p.nickname||'同学')):'[用户不存在]';
   }
   const p=findPostAnywhere(r.target_id);
-  return p?(esc((p.content||'').slice(0,140))||'[图片帖]'):'[帖子不存在或已删除]';
+  return p?(esc(clean((p.content||'').slice(0,140)))||'[图片帖]'):'[帖子不存在或已删除]';
 }
 function renderAdminBody(){
   if($('adminPanel').classList.contains('hide'))return;
@@ -2317,22 +2458,22 @@ function renderAdminReports(){
       const pun=activePun(r.reported_id);
       targetLine=`被举报用户（私信）：<b>${esc(reported)}</b>${punishBadgeHtml(r.reported_id)}${pun?`<span class="punish-row-scope ${pun.scope}">${pun.scope==='dm'?'禁言中':'限制中'}</span>`:''}`;
       // 职责划分：举报管理只负责「执行惩罚」；修改时长/解除惩罚在「惩罚管理」tab
-      acts=handled?'':`<button class="mini" data-aact="viewuser" data-uid="${r.reported_id||''}">👤 查看主页</button><button class="mini" data-aact="viewchat" data-conv="${r.conversation_id||''}" data-uid="${r.reported_id||''}" data-mid="${r.message_id||''}">💬 查看聊天记录</button><button class="mini danger" data-aact="punish" data-uid="${r.reported_id||''}" data-scope="dm" data-rid="${r.id}" data-reason="${esc(r.reason||'')}">⛔ 禁言</button><button class="mini" data-aact="dismissdmreport" data-rid="${r.id}">忽略举报</button>`;
+      acts=handled?'':`<button class="mini" data-aact="viewuser" data-uid="${r.reported_id||''}">👤 查看主页</button><button class="mini" data-aact="viewchat" data-conv="${r.conversation_id||''}" data-uid="${r.reported_id||''}" data-mid="${r.message_id||''}">💬 查看聊天记录</button><button class="mini danger" data-aact="punish" data-uid="${r.reported_id||''}" data-scope="dm" data-rid="${r.id}" data-reason="${esc(clean(r.reason||''))}">⛔ 禁言</button><button class="mini" data-aact="dismissdmreport" data-rid="${r.id}">忽略举报</button>`;
     }else if(r.target_type==='comment'){
       targetLine=`被举报评论：${reportTargetPreview(r)}`;
       acts=handled?'':`<button class="mini danger" data-aact="delcomment-report" data-cid="${r.target_id}" data-rid="${r.id}">🗑️ 删除评论</button><button class="mini" data-aact="dismissreport" data-rid="${r.id}">忽略举报</button>`;
     }else if(r.target_type==='user'){
       const pun=activePun(r.target_id);
       targetLine=`被举报用户：${reportTargetPreview(r)}${punishBadgeHtml(r.target_id)}${pun?`<span class="punish-row-scope ${pun.scope}">${pun.scope==='dm'?'禁言中':'限制中'}</span>`:''}`;
-      acts=handled?'':`<button class="mini" data-aact="viewuser" data-uid="${r.target_id}">👤 查看主页</button><button class="mini danger" data-aact="punish" data-uid="${r.target_id}" data-scope="all" data-rid="${r.id}" data-reason="${esc(r.reason||'')}">⛔ 限制</button><button class="mini" data-aact="dismissreport" data-rid="${r.id}">忽略举报</button>`;
+      acts=handled?'':`<button class="mini" data-aact="viewuser" data-uid="${r.target_id}">👤 查看主页</button><button class="mini danger" data-aact="punish" data-uid="${r.target_id}" data-scope="all" data-rid="${r.id}" data-reason="${esc(clean(r.reason||''))}">⛔ 限制</button><button class="mini" data-aact="dismissreport" data-rid="${r.id}">忽略举报</button>`;
     }else{
       targetLine=`被举报帖子：${reportTargetPreview(r)}`;
       acts=handled?'':`<button class="mini" data-aact="editpost" data-id="${r.target_id}">✏️ 修改</button><button class="mini" data-aact="hidepost" data-id="${r.target_id}" data-rid="${r.id}">👁️ 隐藏</button><button class="mini danger" data-aact="delpost" data-id="${r.target_id}" data-rid="${r.id}">🗑️ 删除</button><button class="mini" data-aact="dismissreport" data-rid="${r.id}">忽略举报</button>`;
     }
     return `<div class="admin-report ${handled?'handled':''}" data-rid="${r.id}">
-      <div class="admin-report-head"><span class="report-reason-tag">${esc(r.reason||'未填写原因')}</span><span class="admin-report-meta">举报人：${esc(reporter)} · ${timeHtml(r.created_at)}${handled?'<span class="handled-badge">已处理</span>':''}</span></div>
+      <div class="admin-report-head"><span class="report-reason-tag">${esc(clean(r.reason||'未填写原因'))}</span><span class="admin-report-meta">举报人：${esc(reporter)} · ${timeHtml(r.created_at)}${handled?'<span class="handled-badge">已处理</span>':''}</span></div>
       <div class="admin-report-target">${targetLine}</div>
-      ${r.detail?`<div class="admin-report-detail">补充说明：${esc(r.detail)}</div>`:''}
+      ${r.detail?`<div class="admin-report-detail">补充说明：${esc(clean(r.detail))}</div>`:''}
       ${acts?`<div class="admin-report-acts">${acts}</div>`:''}
     </div>`;
   }).join('');
@@ -2348,8 +2489,8 @@ function renderAdminPosts(){
   const rows=adminPosts.map(p=>`<div class="admin-row" data-id="${p.id}">
     <label class="admin-check"><input type="checkbox" class="batch-cb" value="${p.id}"></label>
     <div class="admin-row-main">
-      <div class="admin-row-head"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${p.is_pinned?'<span class="pin pin-top">📌 置顶</span>':''}${p.is_hidden?'<span class="hidden-badge">🚫 已隐藏</span>':''}<span class="admin-row-author">${esc(displayName(p.author_id,p.anonymous))}</span>${timeHtml(p.created_at)}</div>
-      <div class="admin-row-content">${esc(p.content)||'[图片帖]'}</div>
+      <div class="admin-row-head"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${p.is_pinned?'<span class="pin pin-top">📌 置顶</span>':''}${p.is_hidden?'<span class="hidden-badge">🚫 已隐藏</span>':''}<span class="admin-row-author">${esc(clean(displayName(p.author_id,p.anonymous)))}</span>${timeHtml(p.created_at)}</div>
+      <div class="admin-row-content">${esc(clean(p.content))||'[图片帖]'}</div>
     </div>
     <div class="admin-row-acts">
       <button class="mini" data-aact="pinpost" data-id="${p.id}">${p.is_pinned?'取消置顶':'📌 置顶'}</button>
@@ -2376,8 +2517,8 @@ function renderAdminHidden(){
   if(!hiddenPosts.length)return `<div class="admin-section-title">🚫 隐藏帖子</div><div class="empty"><span class="emoji">🚫</span>当前没有被隐藏的帖子</div>`;
   const rows=hiddenPosts.map(p=>`<div class="admin-row" data-id="${p.id}">
     <div class="admin-row-main">
-      <div class="admin-row-head"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><span class="hidden-badge">🚫 已隐藏</span><span class="admin-row-author">${esc(displayName(p.author_id,p.anonymous))}</span>${timeHtml(p.created_at)}</div>
-      <div class="admin-row-content">${esc(p.content)||'[图片帖]'}</div>
+      <div class="admin-row-head"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><span class="hidden-badge">🚫 已隐藏</span><span class="admin-row-author">${esc(clean(displayName(p.author_id,p.anonymous)))}</span>${timeHtml(p.created_at)}</div>
+      <div class="admin-row-content">${esc(clean(p.content))||'[图片帖]'}</div>
     </div>
     <div class="admin-row-acts">
       <button class="mini" data-aact="restorepost" data-id="${p.id}">♻️ 恢复</button>
@@ -2457,7 +2598,7 @@ async function submitPunish(){
     }else{
       const {error}=await client.rpc('apply_punishment',{
         p_user:punishDraft.uid,p_scope:punishDraft.scope,p_duration:dur,
-        p_reason:$('punishReason').value.trim(),p_source:punishDraft.source,p_report:punishDraft.reportId
+        p_reason:clean($('punishReason').value.trim()),p_source:punishDraft.source,p_report:punishDraft.reportId
       });
       if(error)throw error;
       // 执行惩罚即视为该举报已处理（SQL 端也会标记）：本地即时更新，避免还显示“忽略举报/待处理”
@@ -2499,7 +2640,7 @@ async function openAdminChat(convId,uid,highlightMsgId){
     $('adminChatBody').innerHTML=msgs.map(m=>{
       const mine=m.sender_id===currentUser?.id;
       const reported=m.id===highlightMsgId;
-      return `<div class="admin-chat-msg ${mine?'mine':''} ${reported?'reported':''}"><div class="ac-name">${esc(displayName(m.sender_id,false))} · ${esc(fmtTime(m.created_at))}${reported?' · 被举报':''}</div>${m.image_url?`<img src="${esc(m.image_url)}" style="max-width:180px;border-radius:9px;display:block;margin-bottom:4px">`:''}${m.content?`<div class="ac-bubble">${esc(m.content)}</div>`:''}</div>`;
+      return `<div class="admin-chat-msg ${mine?'mine':''} ${reported?'reported':''}"><div class="ac-name">${esc(clean(displayName(m.sender_id,false)))} · ${esc(fmtTime(m.created_at))}${reported?' · 被举报':''}</div>${m.image_url?`<img src="${esc(m.image_url)}" style="max-width:180px;border-radius:9px;display:block;margin-bottom:4px">`:''}${m.content?`<div class="ac-bubble">${esc(clean(m.content))}</div>`:''}</div>`;
     }).join('');
     const box=$('adminChatBody');box.scrollTop=box.scrollHeight;
   }catch(e){
@@ -2787,7 +2928,7 @@ async function handlePostImages(e){let added=0;for(const f of e.target.files){if
 function renderPostPreview(){$('postPreviewList').innerHTML=pendingPostImages.map((s,i)=>previewItemHtml(s,i)).join('');$('postPreviewList').querySelectorAll('.remove-img').forEach(b=>b.onclick=()=>{pendingPostImages.splice(+b.dataset.i,1);pendingPostThumbs.splice(+b.dataset.i,1);renderPostPreview()})}
 
 async function publishPost(){
-  const content=$('textVal').value.trim(),category=$('catSelect').value,anonymous=$('anonCheck').checked;
+  const content=clean($('textVal').value.trim()),category=$('catSelect').value,anonymous=$('anonCheck').checked;
   if(!content){toast('请输入文字内容');return}
   if(content.length>1000){toast('帖子最多 1000 字，请精简一下');return}
   const pb=punishBlockText('post');if(pb){toast(pb);return}
@@ -2970,7 +3111,7 @@ function postHtml(p){
   return `<article class="card post-card ${p.is_admin||p.is_pinned?'pinned':''}" data-id="${p.id}">
     <div class="post-head"><div class="avatar" ${authorAttr}>${avatarInner(av)}</div><div style="min-width:0;flex:1"><div class="post-user" ${authorAttr}><span class="post-name">${esc(name)}</span>${admin?'<span class="admin-badge">管理员</span>':''}${p.anonymous?'':realInfoHtml(p.author_id)+genderHtml(p.author_id)}${punishBadgeHtml(p.author_id)}</div>${timeHtml(p.created_at)}</div></div>
     <div class="post-meta"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${p.is_admin?'<span class="pin">👑 管理员发布</span>':''}${p.is_pinned?'<span class="pin pin-top">📌 置顶</span>':''}${p.is_hidden?'<span class="hidden-badge">🚫 已隐藏</span>':''}</div>
-    <div class="post-content preview">${esc(p.content)}</div>
+    <div class="post-content preview">${esc(clean(p.content))}</div>
     ${(()=>{const n=(p.images&&p.images.length)||(p.thumbs&&p.thumbs.length)||p.media_count||0;return n>0?`<div class="media-badge">📷 含 ${n} 张图片/视频，点开查看</div>`:''})()}
     <div class="post-open-hint">点击查看完整内容、评论与互动数据 →</div>
     <div class="actions">
@@ -2992,7 +3133,7 @@ function replyPrefix(c){
   const parent=comments.find(x=>x.id===c.reply_to);
   if(!parent)return '';
   const paAttr=parent.anonymous?'':`data-author="${parent.author_id}"`;
-  return `<span class="reply-prefix">回复 <strong ${paAttr}>${esc(displayName(parent.author_id,!!parent.anonymous))}</strong>：</span>`;
+  return `<span class="reply-prefix">回复 <strong ${paAttr}>${esc(clean(displayName(parent.author_id,!!parent.anonymous)))}</strong>：</span>`;
 }
 // v2.0.5：评论媒体渲染——有原图用原图，否则用缩略图（缺原图时点击后由 upgradeCommentMedia 补）
 function commentMediaHtml(c){
@@ -3027,7 +3168,7 @@ async function upgradeCommentMedia(postId){
     if(detailOpen&&detailPostId===postId)renderDetailComments(postId,false);
   }catch(e){}
 }
-function commentHtml(c){const prof=profileFor(c.author_id),name=displayName(c.author_id,!!c.anonymous),av=prof?.avatar||'😀';const aAttr=c.anonymous?'':`data-author="${c.author_id}"`;const rp=replyPrefix(c);const replyBtn=c.author_id!==currentUser?.id?`<button class="comment-reply" data-act="reply" data-cid="${c.id}" data-uid="${c.author_id}">回复</button>`:'';return `<div class="comment" data-cid="${c.id}"><div class="comment-avatar" ${aAttr}>${avatarInner(av)}</div><div class="comment-body"><div class="comment-head"><strong ${aAttr}>${esc(name)}</strong>${c.is_admin?'<span class="admin-badge">管理员</span>':''}${punishBadgeHtml(c.author_id)}${c.is_pinned?'<span class="pin pin-top" style="font-size:11px">📌 置顶</span>':''}${timeHtml(c.created_at,'comment-time')}<span class="comment-actions">${replyBtn}${c.author_id!==currentUser?.id?`<button class="comment-del" data-act="report" data-ctype="comment" data-cid="${c.id}">举报</button>`:''}${isAdmin()?`<button class="comment-del" data-act="${c.is_pinned?'unpincomment':'pincomment'}" data-cid="${c.id}">${c.is_pinned?'取消置顶':'📌 置顶'}</button>`:''}${canDeleteComment(c)?`<button class="comment-del" data-act="delcomment" data-cid="${c.id}">删除</button>`:''}</span></div><div class="comment-text">${rp}${esc(c.content)}</div>${commentMediaHtml(c)}</div></div>`}
+function commentHtml(c){const prof=profileFor(c.author_id),name=displayName(c.author_id,!!c.anonymous),av=prof?.avatar||'😀';const aAttr=c.anonymous?'':`data-author="${c.author_id}"`;const rp=replyPrefix(c);const replyBtn=c.author_id!==currentUser?.id?`<button class="comment-reply" data-act="reply" data-cid="${c.id}" data-uid="${c.author_id}">回复</button>`:'';return `<div class="comment" data-cid="${c.id}"><div class="comment-avatar" ${aAttr}>${avatarInner(av)}</div><div class="comment-body"><div class="comment-head"><strong ${aAttr}>${esc(name)}</strong>${c.is_admin?'<span class="admin-badge">管理员</span>':''}${punishBadgeHtml(c.author_id)}${c.is_pinned?'<span class="pin pin-top" style="font-size:11px">📌 置顶</span>':''}${timeHtml(c.created_at,'comment-time')}<span class="comment-actions">${replyBtn}${c.author_id!==currentUser?.id?`<button class="comment-del" data-act="report" data-ctype="comment" data-cid="${c.id}">举报</button>`:''}${isAdmin()?`<button class="comment-del" data-act="${c.is_pinned?'unpincomment':'pincomment'}" data-cid="${c.id}">${c.is_pinned?'取消置顶':'📌 置顶'}</button>`:''}${canDeleteComment(c)?`<button class="comment-del" data-act="delcomment" data-cid="${c.id}">删除</button>`:''}</span></div><div class="comment-text">${rp}${esc(clean(c.content))}</div>${commentMediaHtml(c)}</div></div>`}
 function startReply(cid,uid){
   const c=comments.find(x=>x.id===cid);if(!c||!detailOpen)return;
   pendingReply={postId:detailPostId,commentId:cid,toUid:uid,toName:displayName(uid,!!c.anonymous)};
@@ -3127,7 +3268,7 @@ function renderDetail(p){
   $('detailBody').innerHTML=`<div class="card detail-post">
     <div class="post-head"><div class="avatar" ${authorAttr}>${avatarInner(av)}</div><div style="min-width:0;flex:1"><div class="post-user" ${authorAttr}><span class="post-name">${esc(name)}</span>${admin?'<span class="admin-badge">管理员</span>':''}${p.anonymous?'':realInfoHtml(p.author_id)+genderHtml(p.author_id)}${punishBadgeHtml(p.author_id)}</div>${timeHtml(p.created_at)}</div></div>
     <div class="post-meta"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${p.is_admin?'<span class="pin">👑 管理员发布</span>':''}${p.is_pinned?'<span class="pin pin-top">📌 置顶</span>':''}${p.is_hidden?'<span class="hidden-badge">🚫 已隐藏</span>':''}</div>
-    <div class="post-content">${esc(p.content)}</div>
+    <div class="post-content">${esc(clean(p.content))}</div>
     ${mediaGrid(p.images,{},p.thumbs)}
     <div class="actions">
       <button class="action ${liked?'like-on':''}" data-act="like" data-id="${p.id}">${liked?'❤️':'♡'} 点赞 ${st.likes}</button>
@@ -3330,7 +3471,7 @@ async function deleteComment(id){
   invalidateStats();if(activePage==='my')renderMyPage();toast('已删除');
 }
 async function sendComment(id){
-  const input=$('ci-'+id),content=input.value.trim(),imgs=pendingCommentImages[id]||[],anonymous=!!document.querySelector(`.comment-anon[data-id="${id}"]`)?.checked;
+  const input=$('ci-'+id),content=clean(input.value.trim()),imgs=pendingCommentImages[id]||[],anonymous=!!document.querySelector(`.comment-anon[data-id="${id}"]`)?.checked;
   if(!content){toast('请输入评论文字');return}
   if(content.length>300){toast('评论最多 300 字，请精简一下');return}
   const pb=punishBlockText('comment');if(pb){toast(pb);return}
@@ -3418,22 +3559,22 @@ function switchPage(page){
 }
 function renderMyPage(animate=false){
   if(!currentUser)return;updateUserUI();const box=$('myContentList');
-  if(myTab==='posts'){const a=myPosts;box.innerHTML=a.length?a.map(p=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><button class="action delete" data-myact="delete" data-id="${p.id}">🗑️ 删除</button></div><div class="post-content" style="margin-top:10px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div>${timeHtml(p.created_at)}</div>`).join(''):'<div class="empty"><span class="emoji">📝</span>你还没有发布过帖子哦</div>';
+  if(myTab==='posts'){const a=myPosts;box.innerHTML=a.length?a.map(p=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><button class="action delete" data-myact="delete" data-id="${p.id}">🗑️ 删除</button></div><div class="post-content" style="margin-top:10px">${esc(clean(p.content))||'<span style="color:var(--muted)">[图片帖]</span>'}</div>${timeHtml(p.created_at)}</div>`).join(''):'<div class="empty"><span class="emoji">📝</span>你还没有发布过帖子哦</div>';
   }else if(myTab==='comments'){
     const replies=myComments.filter(c=>c.reply_to);
     const tops=myComments.filter(c=>!c.reply_to);
     if(!myComments.length){box.innerHTML='<div class="empty"><span class="emoji">💬</span>你还没有发表过评论哦</div>';}
     else{
-      const topHtml=tops.length?tops.map(c=>`<div class="card" style="margin-bottom:12px"><div style="font-size:12px;color:var(--muted);margin-bottom:7px">评论帖子：${esc(myParentPosts[c.post_id]?.content||'[图片帖]')}</div><div style="background:#f8fafc;border-radius:9px;padding:10px;font-size:13px;color:var(--sub)">${esc(c.content)||'[图片评论]'}</div><div style="display:flex;align-items:center;margin-top:7px">${timeHtml(c.created_at)}<button class="action delete" style="margin-left:auto" data-myact="delcomment" data-id="${c.id}">🗑️ 删除</button></div></div>`).join(''):'<div class="empty" style="padding:20px"><span class="emoji" style="font-size:26px">💬</span>还没有直接评论过帖子</div>';
-      const replyItem=c=>{const parent=comments.find(x=>x.id===c.reply_to);const pa=parent?parent.author_id:null;const paAttr=parent&&!parent.anonymous?`data-author="${parent.author_id}"`:'';const pname=parent?displayName(parent.author_id,!!parent.anonymous):'某条评论';return `<div class="card" style="margin-bottom:12px"><div style="font-size:12px;color:var(--muted);margin-bottom:7px">回复 <b ${paAttr}>${esc(pname)}</b>：${esc(parent?parent.content:'[图片评论]')}</div><div style="background:#f8fafc;border-radius:9px;padding:10px;font-size:13px;color:var(--sub)">${esc(c.content)||'[图片评论]'}</div><div style="display:flex;align-items:center;margin-top:7px">${timeHtml(c.created_at)}<button class="action delete" style="margin-left:auto" data-myact="delcomment" data-id="${c.id}">🗑️ 删除</button></div></div>`};
+      const topHtml=tops.length?tops.map(c=>`<div class="card" style="margin-bottom:12px"><div style="font-size:12px;color:var(--muted);margin-bottom:7px">评论帖子：${esc(clean(myParentPosts[c.post_id]?.content||'[图片帖]'))}</div><div style="background:#f8fafc;border-radius:9px;padding:10px;font-size:13px;color:var(--sub)">${esc(clean(c.content))||'[图片评论]'}</div><div style="display:flex;align-items:center;margin-top:7px">${timeHtml(c.created_at)}<button class="action delete" style="margin-left:auto" data-myact="delcomment" data-id="${c.id}">🗑️ 删除</button></div></div>`).join(''):'<div class="empty" style="padding:20px"><span class="emoji" style="font-size:26px">💬</span>还没有直接评论过帖子</div>';
+      const replyItem=c=>{const parent=comments.find(x=>x.id===c.reply_to);const pa=parent?parent.author_id:null;const paAttr=parent&&!parent.anonymous?`data-author="${parent.author_id}"`:'';const pname=parent?displayName(parent.author_id,!!parent.anonymous):'某条评论';return `<div class="card" style="margin-bottom:12px"><div style="font-size:12px;color:var(--muted);margin-bottom:7px">回复 <b ${paAttr}>${esc(pname)}</b>：${esc(clean(parent?parent.content:'[图片评论]'))}</div><div style="background:#f8fafc;border-radius:9px;padding:10px;font-size:13px;color:var(--sub)">${esc(clean(c.content))||'[图片评论]'}</div><div style="display:flex;align-items:center;margin-top:7px">${timeHtml(c.created_at)}<button class="action delete" style="margin-left:auto" data-myact="delcomment" data-id="${c.id}">🗑️ 删除</button></div></div>`};
       const repliesHtml=replies.length?replies.map(replyItem).join(''):'<div class="empty" style="padding:20px"><span class="emoji" style="font-size:26px">↩️</span>还没有回复过别人</div>';
       box.innerHTML=`<div class="my-subhead">💬 评论帖子 <span class="cnt">${tops.length}</span></div>${topHtml}<div class="my-subhead">↩️ 回复他人 <span class="cnt">${replies.length}</span></div>${repliesHtml}`;
     }
-  }else if(myTab==='hidden'){const a=hiddenPosts;box.innerHTML=a.length?a.map(p=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${isAdmin()?`<button class="mini" data-myact="restore" data-id="${p.id}">♻️ 恢复</button>`:''}</div><div class="post-content" style="margin-top:10px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><div style="display:flex;align-items:center;margin-top:6px"><span style="font-size:12px;color:var(--muted)">作者：${esc(displayName(p.author_id,p.anonymous))}</span>${timeHtml(p.created_at)}</div></div>`).join(''):'<div class="empty"><span class="emoji">🚫</span>没有隐藏的帖子</div>'
+  }else if(myTab==='hidden'){const a=hiddenPosts;box.innerHTML=a.length?a.map(p=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span>${isAdmin()?`<button class="mini" data-myact="restore" data-id="${p.id}">♻️ 恢复</button>`:''}</div><div class="post-content" style="margin-top:10px">${esc(clean(p.content))||'<span style="color:var(--muted)">[图片帖]</span>'}</div><div style="display:flex;align-items:center;margin-top:6px"><span style="font-size:12px;color:var(--muted)">作者：${esc(clean(displayName(p.author_id,p.anonymous)))}</span>${timeHtml(p.created_at)}</div></div>`).join(''):'<div class="empty"><span class="emoji">🚫</span>没有隐藏的帖子</div>'
   }else if(myTab==='history'){const a=myHistory;box.innerHTML=a.length?a.map(h=>{const p=h.posts;return p?`<div style="margin-bottom:14px"><div class="history-time">浏览于 ${timeHtml(h.created_at)}</div>${postHtml(p)}</div>`:''}).filter(Boolean).join(''):'<div class="empty"><span class="emoji">🕘</span>你还没有浏览过任何帖子</div>';}else if(myTab==='following'){const a=[...followingSet];box.innerHTML=a.length?a.map(uid=>userRowHtml(uid,'mine-following')).join(''):'<div class="empty"><span class="emoji">➕</span>你还没有关注任何人</div>';
   }else if(myTab==='followers'){const a=[...followerSet];box.innerHTML=a.length?a.map(uid=>userRowHtml(uid,'mine-followers')).join(''):'<div class="empty"><span class="emoji">👥</span>还没有人关注你</div>';
   }else if(myTab==='punishments'){renderMyPunishments();
-  }else{const ids=(myTab==='likes'?likes:favorites).filter(x=>x.user_id===currentUser?.id).map(x=>x.post_id);const arr=ids.map(id=>myParentPosts[id]).filter(Boolean);box.innerHTML=arr.length?arr.map(p=>`<div class="card" style="margin-bottom:12px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><div class="post-content" style="margin-top:9px">${esc(p.content)||'<span style="color:var(--muted)">[图片帖]</span>'}</div><button class="action ${myTab==='likes'?'like-on':'fav-on'}" data-myact="${myTab==='likes'?'unlike':'unfav'}" data-id="${p.id}">${myTab==='likes'?'❤️ 取消点赞':'⭐ 取消收藏'}</button></div>`).join(''):`<div class="empty"><span class="emoji">${myTab==='likes'?'❤️':'⭐'}</span>${myTab==='likes'?'你还没有点赞过帖子哦':'你还没有收藏过帖子哦'}</div>`}
+  }else{const ids=(myTab==='likes'?likes:favorites).filter(x=>x.user_id===currentUser?.id).map(x=>x.post_id);const arr=ids.map(id=>myParentPosts[id]).filter(Boolean);box.innerHTML=arr.length?arr.map(p=>`<div class="card" style="margin-bottom:12px"><span class="tag ${catInfo(p.category).cls}">${catInfo(p.category).name}</span><div class="post-content" style="margin-top:9px">${esc(clean(p.content))||'<span style="color:var(--muted)">[图片帖]</span>'}</div><button class="action ${myTab==='likes'?'like-on':'fav-on'}" data-myact="${myTab==='likes'?'unlike':'unfav'}" data-id="${p.id}">${myTab==='likes'?'❤️ 取消点赞':'⭐ 取消收藏'}</button></div>`).join(''):`<div class="empty"><span class="emoji">${myTab==='likes'?'❤️':'⭐'}</span>${myTab==='likes'?'你还没有点赞过帖子哦':'你还没有收藏过帖子哦'}</div>`}
   if(animate){box.classList.remove('tab-panel-enter');void box.offsetWidth;box.classList.add('tab-panel-enter');box.addEventListener('animationend',()=>box.classList.remove('tab-panel-enter'),{once:true});}
   else box.classList.remove('tab-panel-enter');
   box.querySelectorAll('[data-myact="delete"]').forEach(b=>b.onclick=()=>deletePost(b.dataset.id));box.querySelectorAll('[data-myact="delcomment"]').forEach(b=>b.onclick=()=>deleteComment(b.dataset.id));box.querySelectorAll('[data-myact="unlike"]').forEach(b=>b.onclick=()=>toggleLike(b.dataset.id));box.querySelectorAll('[data-myact="unfav"]').forEach(b=>b.onclick=()=>toggleFav(b.dataset.id));box.querySelectorAll('[data-myact="restore"]').forEach(b=>b.onclick=()=>restorePost(b.dataset.id));
@@ -3496,7 +3637,7 @@ async function renderUserProfile(uid,prof){
   prof=prof||profileFor(uid)||{id:uid,nickname:'同学',avatar:'😀'};
   // 头部信息来自本地缓存，先渲染，保证点开秒显示
   $('uhAvatar').innerHTML=avatarInner(prof.avatar||'😀');
-  $('uhNick').innerHTML=esc(prof.nickname||'同学')+realInfoHtml(uid)+genderHtml(uid)+punishBadgeHtml(uid);
+  $('uhNick').innerHTML=esc(clean(prof.nickname||'同学'))+realInfoHtml(uid)+genderHtml(uid)+punishBadgeHtml(uid);
   $('uhMeta').textContent='思茅一中 · 在校学生';
   $('uhBio').textContent=prof.bio||'这个人很懒，什么都没写～';
   // 简介下方：公开的性别 + 真实信息（互不冲突，各自独立显示；自己的主页始终显示自己的性别）
@@ -3539,7 +3680,7 @@ function userRowHtml(uid,mode){
   else if(mode==='mine-followers')label=mutual?'🤝 互关':(iFollow?'✅ 已关注':'➕ 关注');
   else label=followLabel(uid);
   const primary=(mode==='other')?(iFollow?'':'primary'):(mutual?'':'primary');
-  return `<div class="follow-row" data-uid="${uid}"><div class="avatar" data-author="${uid}">${avatarInner(p.avatar||'😀')}</div><div class="follow-info" data-author="${uid}"><div class="follow-name">${esc(p.nickname||'同学')}${punishBadgeHtml(uid)}</div><div class="follow-sub">${esc(p.real_name_display||'')}</div></div><button class="mini ${primary}" data-follow="${uid}">${label}</button></div>`;
+  return `<div class="follow-row" data-uid="${uid}"><div class="avatar" data-author="${uid}">${avatarInner(p.avatar||'😀')}</div><div class="follow-info" data-author="${uid}"><div class="follow-name">${esc(clean(p.nickname||'同学'))}${punishBadgeHtml(uid)}</div><div class="follow-sub">${esc(clean(p.real_name_display||''))}</div></div><button class="mini ${primary}" data-follow="${uid}">${label}</button></div>`;
 }
 // ---- 通知 ----
 let notifBusy=false;
@@ -3655,7 +3796,7 @@ async function loadConversations(){
 }
 function dmPreviewOf(m){
   if(!m)return '私信会话';
-  if(m.content)return esc(m.content);
+  if(m.content)return esc(clean(m.content));
   // v2.0.5：会话列表不再拉 image_url 大字段，用轻量的 media_kind/thumb_url 判断
   if(m.media_kind==='video')return '🎬 视频';
   if(m.media_kind==='image'||m.thumb_url)return '📷 图片';
@@ -3667,7 +3808,7 @@ function renderConversations(){
   box.innerHTML=conversations.map(c=>{
     const other=c.user_a===currentUser?.id?c.user_b:c.user_a;
     const mt=convMeta[c.id]||{},last=mt.last,unread=mt.unread||0;
-    return `<div class="dm-item${unread?' has-unread':''}" data-conv="${c.id}"><div class="avatar">${avatarInner(profileFor(other)?.avatar||'😀')}</div><div class="dm-item-body"><div class="dm-item-top"><span class="dm-item-name">${esc(displayName(other,false))}${punishBadgeHtml(other)}</span>${last?`<span class="dm-item-time">${timeHtml(last.created_at,'comment-time')}</span>`:''}</div><div class="dm-item-sub">${c.unlocked?'':'🔒 '}${dmPreviewOf(last)}</div></div>${unread?`<span class="dm-unread">${unread>99?'99+':unread}</span>`:''}</div>`;
+    return `<div class="dm-item${unread?' has-unread':''}" data-conv="${c.id}"><div class="avatar">${avatarInner(profileFor(other)?.avatar||'😀')}</div><div class="dm-item-body"><div class="dm-item-top"><span class="dm-item-name">${esc(clean(displayName(other,false)))}${punishBadgeHtml(other)}</span>${last?`<span class="dm-item-time">${timeHtml(last.created_at,'comment-time')}</span>`:''}</div><div class="dm-item-sub">${c.unlocked?'':'🔒 '}${dmPreviewOf(last)}</div></div>${unread?`<span class="dm-unread">${unread>99?'99+':unread}</span>`:''}</div>`;
   }).join('');
   box.querySelectorAll('.dm-item').forEach(el=>el.onclick=()=>openDMChat(el.dataset.conv));
 }
@@ -3693,7 +3834,7 @@ async function openDMChat(convId){
   let c=conversations.find(x=>x.id===convId);
   if(!c){const {data}=await client.from('conversations').select('*').eq('id',convId).single();c=data;}
   if(!c)return;
-  $('dmChatName').innerHTML=esc(displayName(otherOf(c),false))+punishBadgeHtml(otherOf(c));
+  $('dmChatName').innerHTML=esc(clean(displayName(otherOf(c),false)))+punishBadgeHtml(otherOf(c));
   $('dmChat').classList.remove('hide');$('dmList').classList.add('hide');
   $('dmMessages').innerHTML='<div class="dm-empty">加载中…</div>';
   await loadMessages(convId);
@@ -3735,7 +3876,7 @@ function renderChat(convId,msgs){
     }
     // 只给对方的消息加举报入口：举报某条具体消息，管理员端可红框定位
     const rep=!mine?`<button class="dm-msg-report" data-mid="${m.id}" title="举报这条消息">🚩</button>`:'';
-    return `<div class="dm-msg ${mine?'mine':''}" data-dmmsg="${m.id}">${img}${m.content?`<div class="dm-bubble">${esc(m.content)}</div>`:''}<div class="dm-msg-foot"><div class="dm-time">${timeHtml(m.created_at,'comment-time')}</div>${mine?`<span class="dm-read ${m.read_at?'on':''}">${m.read_at?'已读':'未读'}</span>`:rep}</div></div>`;
+    return `<div class="dm-msg ${mine?'mine':''}" data-dmmsg="${m.id}">${img}${m.content?`<div class="dm-bubble">${esc(clean(m.content))}</div>`:''}<div class="dm-msg-foot"><div class="dm-time">${timeHtml(m.created_at,'comment-time')}</div>${mine?`<span class="dm-read ${m.read_at?'on':''}">${m.read_at?'已读':'未读'}</span>`:rep}</div></div>`;
   }).join('');
   box.querySelectorAll('.dm-msg-report').forEach(b=>b.onclick=()=>openDMReport(convId,b.dataset.mid));
   box.querySelectorAll('[data-dmimg]').forEach(el=>el.onclick=()=>loadDMFullMedia(convId,el.dataset.dmimg,'image',el));
@@ -3782,7 +3923,7 @@ async function loadDMFullMedia(convId,mid,kind,el){
 function renderDMPreview(){const e=$('dmPreview');if(!e)return;e.innerHTML=(pendingDMImages||[]).map((s,i)=>previewItemHtml(s,i)).join('');e.querySelectorAll('.remove-img').forEach(b=>b.onclick=()=>{pendingDMImages.splice(+b.dataset.i,1);renderDMPreview()});}
 async function sendDM(){
   if(!activeConvId)return;
-  const input=$('dmInput'),text=input.value.trim(),imgs=pendingDMImages||[];
+  const input=$('dmInput'),text=clean(input.value.trim()),imgs=pendingDMImages||[];
   if(!text&&!imgs.length)return;
   if(text.length>500){toast('私信最多 500 字，请精简一下');return}
   const pb=punishBlockText('message');if(pb){toast(pb);return}
@@ -3819,7 +3960,7 @@ function openDMReport(convId,msgId){
 async function submitDMReport(){
   const sel=document.querySelector('#dmReportReasons .report-reason.selected');
   if(!sel){$('dmReportStatus').textContent='⚠️ 请先选择举报原因';$('dmReportStatus').className='status err';return;}
-  const payload={reporter_id:currentUser?.id,conversation_id:dmReportTarget.convId,message_id:dmReportTarget.msgId,reported_id:dmReportTarget.reportedId,reason:sel.dataset.label,detail:$('dmReportDetail').value.trim()};
+  const payload={reporter_id:currentUser?.id,conversation_id:dmReportTarget.convId,message_id:dmReportTarget.msgId,reported_id:dmReportTarget.reportedId,reason:sel.dataset.label,detail:clean($('dmReportDetail').value.trim())};
   // 乐观交互：先关弹窗，后台静默提交
   $('dmReportModal').classList.add('hide');toast('已提交举报，管理员会尽快处理');
   try{
@@ -4104,7 +4245,7 @@ function renderAdminPunishments(){
     return `<div class="admin-row" data-pid="${p.id}">
       <div class="admin-row-main">
         <div class="admin-row-head"><span class="punish-row-scope ${p.scope}">${p.scope==='dm'?'⛔ 禁言（私信+评论）':'⛔ 限制（发帖+评论+私信）'}</span>${punishStateText(p)}<span class="admin-row-author">${esc(name)}</span>${timeHtml(p.created_at)}</div>
-        <div class="admin-row-content">原因：${esc(p.reason||'未填写')}${p.ends_at?' · 解封时间：'+esc(fullTime(p.ends_at)):' · 永久惩罚'}</div>
+        <div class="admin-row-content">原因：${esc(clean(p.reason||'未填写'))}${p.ends_at?' · 解封时间：'+esc(fullTime(p.ends_at)):' · 永久惩罚'}</div>
       </div>
       <div class="admin-row-acts">${acts}</div>
     </div>`;
