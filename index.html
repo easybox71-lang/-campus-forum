@@ -998,7 +998,10 @@ input,textarea,select{caret-color:var(--primary)}
 /* —— 底部导航：选中项加一条短横线 —— */
 .mobile-nav button{position:relative;transition:color var(--motion-fast) ease}
 /* v3.0.2 底部导航：窄屏上 5 个按钮原先写了 min-width:72px + 左右各 14px 内边距，
-   加起来超过 430px 可用宽度，文字被挤成两行、图标和文字重叠。这里改成等分 + 不换行。 */
+   加起来超过 430px 可用宽度，文字被挤成两行、图标和文字重叠。这里改成等分 + 不换行。
+   ⚠️ 必须整段包在 max-width:768px 里：底部导航是「仅移动端」元素，基础规则是 .mobile-nav{display:none}。
+   一旦在全局写 display:flex，桌面端就会多出一大条空导航栏把页面顶开（v3.0.2 初版踩过这个坑）。 */
+@media(max-width:768px){
 .mobile-nav{display:flex!important;justify-content:space-between!important;gap:2px}
 .mobile-nav button{
   flex:1 1 0!important;min-width:0!important;max-width:none!important;
@@ -1009,6 +1012,7 @@ input,textarea,select{caret-color:var(--primary)}
 .mobile-nav button svg{width:20px;height:20px;flex:0 0 auto}
 .mobile-nav button.active{background:rgba(47,107,255,.1)!important;color:var(--primary)!important}
 .mobile-nav button.active:after{content:"";position:absolute;left:50%;bottom:-1px;transform:translateX(-50%);width:18px;height:2.5px;border-radius:2px;background:linear-gradient(90deg,#5b93ff,#1c4ee0)}
+}  /* ← 以上仅移动端 */
 
 /* —— 小标签徽章 —— */
 .admin-badge,.pin,.hidden-badge,.punish-badge{border-radius:999px!important;font-weight:750}
