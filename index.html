@@ -2769,7 +2769,12 @@ function openUser(){
   um.onclick=e=>{if(e.target===um)closeUser()};
   um.onscroll=e=>e.stopPropagation();
   // 触摸穿透兜底：内容区滚到头还继续滑时，touchmove 不再传给背后页面
-  um.ontouchmove=e=>{if(e.cancelable)e.preventDefault()};
+
+  // ⚠️ 千万不要在 um（遮罩层）上无条件 preventDefault：
+  //    弹窗内容区是遮罩层的后代，touchmove 会冒泡上来，一旦拦掉，内容区就彻底滑不动
+  //    （v3.0.2 第二版就是这么把「改资料」滑死的）。
+  // 正确做法：只拦「手指按在遮罩空白处」的那一次滑，内容区里的滑交给它自己。
+  bindUserMaskTouch(um);
   // 打开即把滚动位置归零，避免上次滑到底、这次一进来就停在半截
   const es=$('editScroll');if(es)es.scrollTop=0;
 }
@@ -2863,6 +2868,18 @@ function renderEditQuota(){
   el.innerHTML=q.left>0
     ?`✏️ 个人信息每 7 天最多修改 ${EDIT_LIMIT} 次，本周剩余 <b>${q.left}</b> 次（已用 ${q.used} 次）`
     :`⚠️ 本周修改次数已用完（${EDIT_LIMIT}/${EDIT_LIMIT}），7 天后自动恢复`;
+}
+// 遮罩层的触摸拦截：只在「手指按在遮罩空白处」时阻止默认滚动，
+// 内容区里的滑动必须放行，否则弹窗就滑不动了。
+function bindUserMaskTouch(um){
+  if(!um||um.dataset.touchBound==='1')return;
+  um.dataset.touchBound='1';
+  let maskTouch=false;
+  um.addEventListener('touchstart',e=>{maskTouch=(e.target===um)},{passive:true});
+  um.addEventListener('touchmove',e=>{if(maskTouch&&e.cancelable)e.preventDefault()},{passive:false});
+  const reset=()=>{maskTouch=false};
+  um.addEventListener('touchend',reset,{passive:true});
+  um.addEventListener('touchcancel',reset,{passive:true});
 }
 function closeUser(){$('userModal').classList.add('hide');unlockScroll()}
 async function saveProfile(){
